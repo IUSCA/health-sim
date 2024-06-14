@@ -80,6 +80,49 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway" # for connecting to services running on localhost of the host network
 
+# Health Systems
+  synthea:
+    build:
+      context: ./synthea
+    container_name: synthea
+    environment:
+      SYNTHEA_SEED: 456789
+      SYNTHEA_SIZE: 20
+      SYNTHEA_DATE: 20260318
+    volumes:
+      - ./omop/src/synthea/output:/usr/src/app/output
+    entrypoint: ["tail", "-f", "/dev/null"]
+
+  omop:
+    build:
+      context: ./omop
+    container_name: omop
+    environment:
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=example
+      - POSTGRES_DB=app
+      - POSTGRES_HOST=postgres
+    volumes:
+      - ./omop/src/synthea/output:/usr/src/app/src/synthea/output
+      - ./omop/src/convert.R:/usr/src/app/src/convert.R
+    depends_on:
+      - postgres
+      - synthea
+
+  # fhir:
+  #   # https://hub.docker.com/r/conceptant/hapi-fhir/
+  #   image: conceptant/hapi-fhir
+  #   container_name: fhir
+  #   restart: unless-stopped
+  #   ports:
+  #   - 127.0.0.1:8080:8080
+  #   volumes:
+  #     - ./fhir:/var/lib/jetty/target
+
+
+
+
+
 
 volumes:
   ui_modules:

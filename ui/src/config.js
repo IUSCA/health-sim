@@ -10,7 +10,7 @@ const exports = {
     import.meta.env.VITE_CILOGON_RETURN || "https://localhost/auth/cil",
   refreshTokenTMinusSeconds: 300,
   analyticsId: "G-FOO",
-  appTitle: "BIOLOOP",
+  appTitle: "Health-Sim",
   contact: {
     app_admin: "bioloop-ops-l@list.iu.edu",
   },
