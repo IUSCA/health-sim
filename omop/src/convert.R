@@ -33,19 +33,23 @@ cdmDatabaseSchema <- "cdm"
 syntheaSchema     <- "native"
 syntheaFileLoc    <- paste0(base_path, "synthea/output/csv")
 vocabFileLoc      <- paste0(base_path, "vocab/csv")
-syntheaVersion    <- "2.7.0"
+syntheaVersion    <- "3.0.0"
 
 # Create CDM tables
 ETLSyntheaBuilder::CreateCDMTables(connectionDetails,cdmDatabaseSchema,cdmVersion)
+
 # Create synthea tables
 ETLSyntheaBuilder::CreateSyntheaTables(connectionDetails,syntheaSchema, syntheaVersion)
+
 # Populate synthea tables
 ETLSyntheaBuilder::LoadSyntheaTables(connectionDetails,syntheaSchema,syntheaFileLoc)
+
+
 # Populate vocabulary tables
 ETLSyntheaBuilder::LoadVocabFromCsv(connectionDetails,cdmDatabaseSchema,vocabFileLoc)
 # Create intermediate vocabulary mapping and visit rollup tables
 ETLSyntheaBuilder::CreateMapAndRollupTables(connectionDetails, cdmDatabaseSchema,syntheaSchema,cdmVersion,syntheaVersion)
-## Optional Step to create extra indices
+# Optional Step to create extra indices
 ETLSyntheaBuilder::CreateExtraIndices(connectionDetails,cdmDatabaseSchema,syntheaSchema,syntheaVersion)
 # Populate event tables
 ETLSyntheaBuilder::LoadEventTables(connectionDetails,cdmDatabaseSchema,syntheaSchema,cdmVersion,syntheaVersion)

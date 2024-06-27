@@ -1,5 +1,5 @@
 # Use the official R image from the Docker Hub
-FROM r-base:latest
+FROM r-base:4.3.3
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -30,7 +30,6 @@ RUN R -e "remotes::install_github('OHDSI/ETL-Synthea')"
 # Set the working directory
 WORKDIR /usr/src/app/src/
 
-
 # Copy your R script into the container
 COPY src/ /usr/src/app/src/
 
@@ -40,4 +39,5 @@ RUN cd driver/ && wget https://jdbc.postgresql.org/download/postgresql-42.7.3.ja
 VOLUME /usr/src/app/src/output
 
 # Run your R script
-CMD ["tail", "-f", "/dev/null"]
+# CMD ["tail", "-f", "/dev/null"]
+CMD ["Rscript", "convert.R"]

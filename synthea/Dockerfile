@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /usr/src/app
 
 # Install Synthea
-RUN wget https://github.com/synthetichealth/synthea/releases/download/master-branch-latest/synthea-with-dependencies.jar
+RUN wget https://github.com/synthetichealth/synthea/releases/download/v3.0.0/synthea-with-dependencies.jar
 
 # Copy the Synthea properties file
 COPY synthea-omop.properties /usr/src/app/synthea-omop.properties
