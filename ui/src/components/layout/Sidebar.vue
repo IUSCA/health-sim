@@ -80,10 +80,10 @@
 </template>
 
 <script setup>
+import config from "@/config";
 import { useAuthStore } from "@/stores/auth";
 import { useNavStore } from "@/stores/nav";
 import { storeToRefs } from "pinia";
-import config from "@/config";
 
 const props = defineProps({ isSidebarCollapsed: Boolean });
 
@@ -128,6 +128,11 @@ const user_items = ref([
     path: "/projects",
     test_id: "sidebar-projects",
   },
+  {
+    icon: "mdi-people",
+    title: "Patients",
+    path: "/patients"
+  }
   // {
   //   icon: "mdi-chart-gantt",
   //   title: "Tracks",

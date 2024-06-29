@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client-js"
+    previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+schemas  = ["public", "cdm"]
 }
 
 /// Public Schema
@@ -776,7 +778,7 @@ model note_nlp {
   offset                     String?   @db.VarChar(50)
   lexical_variant            String    @db.VarChar(250)
   note_nlp_concept_id        Int?
-  note_nlp_source_concept_id Int?api/prisma/schema.prisma
+  note_nlp_source_concept_id Int?
   nlp_system                 String?   @db.VarChar(250)
   nlp_date                   DateTime  @db.Date
   nlp_datetime               DateTime? @db.Timestamp(6)
