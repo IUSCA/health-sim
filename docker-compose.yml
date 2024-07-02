@@ -85,11 +85,13 @@ services:
       context: ./synthea
     container_name: synthea
     environment:
-      SYNTHEA_SEED: 456789
+      SYNTHEA_SEED: 126453
       SYNTHEA_SIZE: 20
       SYNTHEA_DATE: 20260318
+      FHIR_URL: http://fhir:8080/baseDstu3
     volumes:
       - ./omop/src/synthea/output:/usr/src/app/output
+      - ./synthea/fhir_import.sh:/usr/src/app/fhir_import.sh
     entrypoint: ["tail", "-f", "/dev/null"]
 
   omop:
@@ -108,15 +110,15 @@ services:
       - postgres
       - synthea
 
-  # fhir:
-  #   # https://hub.docker.com/r/conceptant/hapi-fhir/
-  #   image: conceptant/hapi-fhir
-  #   container_name: fhir
-  #   restart: unless-stopped
-  #   ports:
-  #   - 127.0.0.1:8080:8080
-  #   volumes:
-  #     - ./fhir:/var/lib/jetty/target
+  fhir:
+    # https://hub.docker.com/r/conceptant/hapi-fhir/
+    image: conceptant/hapi-fhir
+    container_name: fhir
+    restart: unless-stopped
+    ports:
+    - 127.0.0.1:8080:8080
+    volumes:
+      - ./fhir:/var/lib/jetty/target
 
 
 

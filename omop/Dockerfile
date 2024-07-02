@@ -1,5 +1,6 @@
 # Use the official R image from the Docker Hub
-FROM r-base:4.3.3
+FROM r-base:4.3.3 
+# This version is needed for system level dependencies - 
 
 # Set the working directory
 WORKDIR /usr/src/app

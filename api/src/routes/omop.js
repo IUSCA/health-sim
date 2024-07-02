@@ -10,7 +10,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 const { accessControl } = require('../middleware/auth');
 
 
-const isPermittedTo = accessControl('patients');
+const isPermittedTo = accessControl('omop');
 const router = express.Router();
 const prisma = new PrismaClient();
 

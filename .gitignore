@@ -69,3 +69,5 @@ todo.md
 
 omop/src/vocab/*
 omop/src/synthea/output/
+
+fhir/*
