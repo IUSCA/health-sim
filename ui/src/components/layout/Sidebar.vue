@@ -130,8 +130,13 @@ const user_items = ref([
   },
   {
     icon: "mdi-people",
-    title: "Patients",
-    path: "/patients"
+    title: "OMOP",
+    path: "/omop"
+  },
+  {
+    icon: "mdi-people",
+    title: "FHIR",
+    path: "/fhir"
   }
   // {
   //   icon: "mdi-chart-gantt",

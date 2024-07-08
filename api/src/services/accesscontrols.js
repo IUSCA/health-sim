@@ -46,6 +46,18 @@ const grantsObject = {
     auth: {
       'create:any': ['*'],
     },
+    fhir: {
+      'create:any': ['*'],
+      'read:any': ['*'],
+      'update:any': ['*'],
+      'delete:any': ['*'],
+    },
+    omop: {
+      'create:any': ['*'],
+      'read:any': ['*'],
+      'update:any': ['*'],
+      'delete:any': ['*'],
+    },
   },
 
   // user role permissions
@@ -100,6 +112,18 @@ const grantsObject = {
       'read:any': ['*'],
     },
     about: {
+      'create:any': ['*'],
+      'read:any': ['*'],
+      'update:any': ['*'],
+      'delete:any': ['*'],
+    },
+    fhir: {
+      'create:any': ['*'],
+      'read:any': ['*'],
+      'update:any': ['*'],
+      'delete:any': ['*'],
+    },
+    omop: {
       'create:any': ['*'],
       'read:any': ['*'],
       'update:any': ['*'],

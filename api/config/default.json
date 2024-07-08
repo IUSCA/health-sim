@@ -5,6 +5,7 @@
     "port": 3030,
     "host": "localhost"
   },
+  "fhir_server": "http://fhir:8080/baseDstu3/",
   "logger": {
     "level": "debug"
   },

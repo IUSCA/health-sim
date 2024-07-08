@@ -10,14 +10,12 @@ const { accessControl } = require('../middleware/auth');
 const asyncHandler = require('../middleware/asyncHandler');
 const { isArray } = require('lodash');
 
-const isPermittedTo = accessControl('statistics');
+const isPermittedTo = accessControl('fhir');
 const router = express.Router();
 
 const getClient = (req, res) => 
 smart(req, res).client(config.get('fhir_server'));
 // smart(req, res).client('https://r4.smarthealthit.org');
-
-
 
 // Mapping the FHIR data to the table columns
 const mapData = {

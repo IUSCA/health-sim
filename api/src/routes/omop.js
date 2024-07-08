@@ -16,17 +16,15 @@ const prisma = new PrismaClient();
 
 
 router.get(
-  '/all',
+  '/persons',
 
   asyncHandler(async (req, res, next) => {
     // #swagger.tags = ['Patients']
     // #swagger.summary = get all patients.
     // #swagger.description = admin and operator roles are allowed and user role is forbidden
-
-    console.log("called get all patients")
-    const patients = await prisma.person.findMany({});
-    console.log(patients);
-    res.json(patients);
+    const data = await prisma.person.findMany({});
+    console.log(data);
+    res.json(data);
   }),
 );
 
