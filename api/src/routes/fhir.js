@@ -148,10 +148,12 @@ router.post('/patients/:id/:resourceType/', isPermittedTo('read'), asyncHandler(
     console.log(`Request URL: ${requestURL}`)
     const results = await client.request(requestURL);
 
+   
+  let data = process_data(results, resourceType)
 
-  const data = process_data(results, resourceType)
-
-
+  if(resourceType === 'Vitals') {
+    data = processVitals(data.data)
+  }
 
   res.json(data);
 }));
@@ -202,7 +204,8 @@ router.post(
       count: results.total,
     };
 
-    console.log('data', data)
+    
+   
 
     res.json(data);
   }),
@@ -256,7 +259,7 @@ const processOptions = (options, resourceType) => {
 
 const process_data = (results, resourceType) => {
 
-
+  // console.log('results', results)
 
   let data = results.entry.map((entry) => getFieldsForEntry(
     entry,
@@ -264,7 +267,7 @@ const process_data = (results, resourceType) => {
     Object.keys(mapData[resourceType].fields),
   ));
 
-  console.log('data', data, resourceType)
+  // console.log('data', data, resourceType)
 
   if(resourceType === 'Labs') {
  
@@ -347,6 +350,36 @@ const create_lab_data = (labCategories, data) => {
   return labData;
 
 }
+
+
+
+const processVitals = (data) => {
+
+
+  let vitals = {}
+
+
+
+
+  for(let entry of data){
+    if(entry.type[0] in vitals) {
+      console.log("ENTRY", vitals[entry.type[0]])
+      vitals[entry.type[0]]['date'].push(entry.date[0])
+      vitals[entry.type[0]]['value'].push(entry.value[0])
+    } else {
+      console.log("FIRST ENTRY", entry.type[0])
+      vitals[entry.type[0]] = {
+        type: entry.type[0],
+        value: [entry.value[0]],
+        unit: entry.unit[0],
+        date: [entry.date[0]]
+      }
+    }
+  }
+  console.log('vitals', vitals)
+  return vitals 
+}
+
 
 const getFhirEntry = (entry) => {
   if(isArray(entry)){

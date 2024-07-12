@@ -8,16 +8,18 @@ class fhirService {
   // READ
   getFields = (data) => api.get(`/fhir/${data}/fields`);
   getAll = (data) => api.post(`/fhir/search/`, data);
-  getOne = ({ resourceType, options }) => api.post(`/fhir/patients/${options.id}/${resourceType}`, {options: options});
+  getOne = ({ resourceType, options }) =>
+    api.post(`/fhir/patients/${options.id}/${resourceType}`, {
+      options: options,
+    });
   // getOne = (data) => api.post(`/fhir/search/`, data);
-
 
   // Patients
   getDetails = (data) => api.get(`/fhir/Patients/${data.id}`);
 
   getCategories = () => api.get(`/fhir/categories`);
   getCategoryDetails = (data) =>
-    api.get(`/fhir/${data.resourceType}/${data.id}`);
+    api.post(`/fhir/patients/${data.id}/${data.resourceType}`);
 }
 
 export default new fhirService();
