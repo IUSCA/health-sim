@@ -20,6 +20,8 @@ class fhirService {
   getCategories = () => api.get(`/fhir/categories`);
   getCategoryDetails = (data) =>
     api.post(`/fhir/patients/${data.id}/${data.resourceType}`);
+
+  getOverview = (id) => api.get(`/fhir/patients/${id}/overview`);
 }
 
 export default new fhirService();

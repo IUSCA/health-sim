@@ -116,6 +116,110 @@ router.get('/:resourceType/:id', isPermittedTo('read'), asyncHandler(async (req,
   res.json(data);
 }));
 
+
+router.get('/patients/:id/overview', isPermittedTo('read'), asyncHandler(async (req, res, next) => {
+
+  const client = getClient(req, res);
+
+  const {  id } = req.params;
+
+  let urls = []
+  urls.push(`/Condition?patient=${id}`)
+  urls.push(`/Observation?patient=${id}`)
+  urls.push(`/MedicationRequest?patient=${id}`)
+  urls.push(`/DiagnosticReport?patient=${id}`)
+
+  const results = await Promise.all(urls.map(url => client.request(url)))
+
+
+  const parseData = {
+    conditions: results[0].entry,
+    observations: results[1].entry,
+    medications: results[2].entry,
+    diagnostics: results[3].entry
+  }
+
+  // entry = [
+  // {
+  //   "fullUrl": "http://localhost:8080/baseDstu3/Condition/125",
+  //   "resource": {
+  //     "resourceType": "Condition",
+  //     "id": "125",
+  //     "meta": {
+  //       "versionId": "1",
+  //       "lastUpdated": "2024-07-02T16:05:47.259+00:00"
+  //     },
+  //     "clinicalStatus": "resolved",
+  //     "verificationStatus": "confirmed",
+  //     "code": {
+  //       "coding": [
+  //         {
+  //           "system": "http://snomed.info/sct",
+  //           "code": "233678006",
+  //           "display": "Childhood asthma"
+  //         }
+  //       ],
+  //       "text": "Childhood asthma"
+  //     },
+  //     "subject": {
+  //       "reference": "Patient/103"
+  //     },
+  //     "context": {
+  //       "reference": "Encounter/124"
+  //     },
+  //     "onsetDateTime": "2008-03-25T01:14:59+00:00",
+  //     "abatementDateTime": "2024-01-01T01:14:59+00:00",
+  //     "assertedDate": "2008-03-25T01:14:59+00:00"
+  //   },
+  //   "search": {
+  //     "mode": "match"
+  //   }
+  // }]
+
+  let data = {}
+
+  data.condition = []
+  for(let condition of parseData.conditions) {
+    data.condition.push({
+      label: condition.resource.code.text,
+      startDate: condition.resource.assertedDate,
+      endDate: condition.resource.abatementDateTime
+    })
+  }
+
+  data.observation = []
+  for(let observation of parseData.observations) {
+    data.observation.push({
+      label: observation.resource.code.text,
+      startDate: observation.resource.effectiveDateTime,
+      value: observation.resource.valueQuantity.value,
+      unit: observation.resource.valueQuantity.unit
+    })
+  }
+
+  data.medication = []
+  for(let medication of parseData.medications) {
+    data.medication.push({
+      label: medication.resource.medicationCodeableConcept.text,
+      startDate: medication.resource.authoredOn,
+      endDate: medication.resource.meta.lastUpdated,
+    })
+  }
+
+  data.diagnostic = []
+  for(let diagnostic of parseData.diagnostics) {
+    data.diagnostic.push({
+      label: diagnostic.resource.code.text,
+      startDate: diagnostic.resource.issued,
+    })
+  }
+
+  console.log('data', data)
+
+  res.json(data)
+
+}));
+
 // Get all the resources for a particular patient
 router.post('/patients/:id/:resourceType/', isPermittedTo('read'), asyncHandler(async (req, res, next) => {
   const client = getClient(req, res);

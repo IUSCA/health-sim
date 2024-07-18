@@ -19,6 +19,13 @@ const participants = ref([]);
 const categories = ref([]);
 const display = ref("Patients");
 
+const count = ref(0);
+const pageOptions = [1, 5, 10, 25, 50, 100];
+
+const pages = computed(() =>
+  Math.floor(count.value / options.value.numPerPage),
+);
+
 onMounted(async () => {
   try {
     categories.value = (await fhirService.getCategories()).data;
@@ -35,22 +42,38 @@ const getData = async () => {
   const results = await fhirService.getAll({
     fields: fields,
     resourceType: display.value,
-    options: {
-      search: "",
-      sortBy: "NONE",
-      sortingOrder: "asc",
-      page: 1,
-      numPerPage: 10,
-    },
+    options: options.value,
   });
 
   participants.value = results.data.data;
+  count.value = results.data.count;
 };
 
 const selectPatient = (id) => {
   console.log(id);
   router.push(`/fhir/patient/${id}`);
 };
+
+const options = ref({
+  sortBy: "NONE",
+  sortingOrder: "asc",
+  numPerPage: 10,
+  page: 1,
+});
+
+watch(
+  () => [
+    options.value.sortBy,
+    options.value.sortingOrder,
+    options.value.numPerPage,
+    options.value.page,
+  ],
+  () => {
+    console.log("sorting...");
+    getData();
+  },
+  { deep: true },
+);
 </script>
 
 <template>
@@ -81,5 +104,15 @@ const selectPatient = (id) => {
         </tr>
       </tbody>
     </table>
+    <div class="mt-2 flex flex-row content-end">
+      <va-select
+        class="w-2 w-full rounded"
+        v-model="options.numPerPage"
+        :options="pageOptions"
+        label="Number Per Page"
+      />
+      <b class="pt-2 ml-2">Total: {{ count }}</b>
+      <va-pagination input v-model="options.page" :pages="pages" />
+    </div>
   </div>
 </template>
