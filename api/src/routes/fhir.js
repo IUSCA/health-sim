@@ -192,8 +192,7 @@ router.get('/patients/:id/overview', isPermittedTo('read'), asyncHandler(async (
     data.observation.push({
       label: observation.resource.code.text,
       startDate: observation.resource.effectiveDateTime,
-      value: observation.resource.valueQuantity.value,
-      unit: observation.resource.valueQuantity.unit
+
     })
   }
 
