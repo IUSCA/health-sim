@@ -1,9 +1,7 @@
 <script setup>
-import { stringToRGB } from "@/services/colors";
-import fhirService from "@/services/fhir";
+import Overview from "@/components/patient/Overview.vue";
+import omopService from "@/services/omop";
 import { useNavStore } from "@/stores/nav";
-
-import { initials } from "@/services/utils";
 
 const nav = useNavStore();
 nav.setNavItems([], true);
@@ -12,8 +10,8 @@ const { id } = defineProps({ id: String });
 
 nav.setNavItems([
   {
-    label: `FHIR Patients`,
-    to: "/fhir",
+    label: `OMOP Patients`,
+    to: "/omop",
   },
   {
     label: `Patient ${id}`,
@@ -26,30 +24,19 @@ const overview = ref({});
 
 onMounted(async () => {
   try {
-    const detailData = (await fhirService.getDetails({ id })).data;
-    details.value = parseDetails(detailData);
+    const detailData = (await omopService.getDetails(id)).data;
+    details.value = detailData;
 
-    vitals.value = (
-      await fhirService.getCategoryDetails({ id, resourceType: "Vitals" })
-    ).data;
-
-    overview.value = (await fhirService.getOverview(id)).data;
+    overview.value = (await omopService.getOverview(id)).data;
+    console.log(overview.value);
   } catch (err) {
     console.error(err);
   }
 });
 
-const parseDetails = (d) => {
-  let parsedDetails = {};
-  for (const detail of Object.keys(d)) {
-    parsedDetails[detail] = d[detail][0] === undefined ? "" : d[detail][0];
-  }
-  return parsedDetails;
-};
-
 const age = computed(() => {
-  if (details.value.birthDate === undefined) return "";
-  const dob = new Date(details.value.birthDate);
+  if (details.value.birth_datetime === undefined) return "";
+  const dob = new Date(details.value.birth_datetime);
   const diff_ms = Date.now() - dob.getTime();
   const age_dt = new Date(diff_ms);
   return Math.abs(age_dt.getUTCFullYear() - 1970);
@@ -78,28 +65,24 @@ const view = ref("Graph");
 
     <div class="flex justify-between">
       <div class="flex">
-        <va-avatar
-          :color="stringToRGB(details.name || '')"
-          size="small"
-          class="mt-3"
-        >
-          <span class="text-sm uppercase">{{ initials(details.name) }}</span>
-        </va-avatar>
         <div class="ml-3">
           <h1 class="text-xl font-bold">
-            {{ details.name }} ({{ capitalizeFirstLetter(details.gender) }})
+            {{ capitalizeFirstLetter(details.gender_source_value) }}
           </h1>
-          <h2 class="text-base">Age: {{ age }} ({{ details.birthDate }})</h2>
+          <h2 class="text-base">
+            Age: {{ age }} ({{
+              new Date(details.birth_datetime).toLocaleDateString()
+            }})
+          </h2>
         </div>
       </div>
-
-      <div v-if="details.address">
-        <h2 class="text-lg font-bold">Address</h2>
-        <p>{{ details.address }}</p>
+      <div v-if="details.race_source_value">
+        <h2 class="text-lg font-bold">Race</h2>
+        <p>{{ details.race_source_value }}</p>
       </div>
-      <div v-if="details.telecom">
-        <h2 class="text-lg font-bold">Telecom</h2>
-        <p>{{ details.telecom }}</p>
+      <div v-if="details.ethnicity_source_value">
+        <h2 class="text-lg font-bold">Ethnicity</h2>
+        <p>{{ details.ethnicity_source_value }}</p>
       </div>
     </div>
     <VaDivider orientation="center" class="mt-6"> </VaDivider>
@@ -122,11 +105,11 @@ const view = ref("Graph");
     </div>
 
     <div v-if="category === 'Overview'">
-      <Overview :overview="overview" :birthDate="details.birthDate" />
+      <Overview :overview="overview" :birth-date="details.birth_datetime" />
     </div>
     <div v-else>
       <p class="text-center font-bold mb-2">
-        {{ new Date(details.birthDate).toLocaleDateString() }} -
+        {{ new Date(details.birth_datetime).toLocaleDateString() }} -
         {{ new Date(Date.now()).toLocaleDateString() }}
       </p>
       <div class="w-full mb-4">

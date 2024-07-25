@@ -24,6 +24,8 @@ const { overview, birthDate } = defineProps({
   birthDate: String,
 });
 
+console.log(overview, birthDate);
+
 var startTime = +new Date();
 const colors = ref(["#7b9ce1", "#bd6d6c", "#75d874", "#e0bc78"]);
 
@@ -62,8 +64,6 @@ const data = computed(() => {
 
   return arr;
 });
-
-console.log("DATA", data);
 
 const renderItem = (params, api) => {
   var categoryIndex = api.value(0);

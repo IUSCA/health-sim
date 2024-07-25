@@ -339,729 +339,897 @@ enum access_type {
 
 /// CDM Schema
 
+model attribute_definition {
+  attribute_definition_id   Int                @id(map: "xpk_attribute_definition")
+  attribute_name            String             @db.VarChar(255)
+  attribute_description     String?
+  attribute_type_concept_id Int
+  attribute_syntax          String?
+  concept                   concept            @relation(fields: [attribute_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_attribute_type_concept")
+  cohort_attribute          cohort_attribute[]
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model all_visits {
-  encounter_id        String?
-  patient             String?   @db.VarChar(1000)
-  encounterclass      String?   @db.VarChar(1000)
-  visit_start_date    DateTime? @db.Date
-  visit_end_date      DateTime? @db.Timestamp(6)
-  visit_occurrence_id BigInt?
-
-  @@ignore
-@@schema("cdm")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model assign_all_visit_ids {
-  encounter_id            String?   @db.VarChar(1000)
-  person_source_value     String?   @db.VarChar(1000)
-  date_service            DateTime? @db.Date
-  date_service_end        DateTime? @db.Date
-  encounterclass          String?   @db.VarChar(1000)
-  visit_type              String?   @db.VarChar(1000)
-  visit_start_date        DateTime? @db.Date
-  visit_end_date          DateTime? @db.Timestamp(6)
-  visit_occurrence_id     BigInt?
-  visit_occurrence_id_new BigInt?
-
-  @@ignore
+  @@index([attribute_definition_id], map: "idx_attribute_definition_id")
 @@schema("cdm")
 }
 
 model care_site {
-  care_site_id                  Int     @id(map: "xpk_care_site")
-  care_site_name                String? @db.VarChar(255)
+  care_site_id                  Int                @id(map: "xpk_care_site")
+  care_site_name                String?            @db.VarChar(255)
   place_of_service_concept_id   Int?
-  location_id                   Int?
-  care_site_source_value        String? @db.VarChar(50)
-  place_of_service_source_value String? @db.VarChar(50)
+  location_id                   BigInt?
+  care_site_source_value        String?            @db.VarChar(50)
+  place_of_service_source_value String?            @db.VarChar(50)
+  location                      location?          @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_care_site_location")
+  concept                       concept?           @relation(fields: [place_of_service_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_care_site_place")
+  person                        person[]
+  provider                      provider[]
+  visit_detail                  visit_detail[]
+  visit_occurrence              visit_occurrence[]
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model cdm_source {
-  cdm_source_name                String   @db.VarChar(255)
-  cdm_source_abbreviation        String   @db.VarChar(25)
-  cdm_holder                     String   @db.VarChar(255)
-  source_description             String?
-  source_documentation_reference String?  @db.VarChar(255)
-  cdm_etl_reference              String?  @db.VarChar(255)
-  source_release_date            DateTime @db.Date
-  cdm_release_date               DateTime @db.Date
-  cdm_version                    String?  @db.VarChar(10)
-  cdm_version_concept_id         Int
-  vocabulary_version             String   @db.VarChar(20)
-
-  @@ignore
-@@schema("cdm")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model cohort {
   cohort_definition_id Int
   subject_id           Int
-  cohort_start_date    DateTime @db.Date
-  cohort_end_date      DateTime @db.Date
+  cohort_start_date    DateTime @db.Timestamp(6)
+  cohort_end_date      DateTime @db.Timestamp(6)
 
-  @@ignore
+  @@id([cohort_definition_id, subject_id, cohort_start_date, cohort_end_date], map: "xpk_cohort")
+  @@index([cohort_definition_id], map: "idx_cohort_c_definition_id")
+  @@index([subject_id], map: "idx_cohort_subject_id")
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model cohort_definition {
-  cohort_definition_id          Int
-  cohort_definition_name        String    @db.VarChar(255)
-  cohort_definition_description String?
-  definition_type_concept_id    Int
-  cohort_definition_syntax      String?
-  subject_concept_id            Int
-  cohort_initiation_date        DateTime? @db.Date
+model cohort_attribute {
+  cohort_definition_id    Int
+  subject_id              Int
+  cohort_start_date       DateTime             @db.Timestamp(6)
+  cohort_end_date         DateTime             @db.Timestamp(6)
+  attribute_definition_id Int
+  value_as_number         Decimal?             @db.Decimal
+  value_as_concept_id     Int?
+  attribute_definition    attribute_definition @relation(fields: [attribute_definition_id], references: [attribute_definition_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_ca_attribute_definition")
+  cohort_definition       cohort_definition    @relation(fields: [cohort_definition_id], references: [cohort_definition_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_ca_cohort_definition")
+  concept                 concept?             @relation(fields: [value_as_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_ca_value")
 
-  @@ignore
+  @@id([cohort_definition_id, subject_id, cohort_start_date, cohort_end_date, attribute_definition_id], map: "xpk_cohort_attribute")
+  @@index([cohort_definition_id], map: "idx_ca_definition_id")
+  @@index([subject_id], map: "idx_ca_subject_id")
+@@schema("cdm")
+}
+
+model cohort_definition {
+  cohort_definition_id                                          Int                @id(map: "xpk_cohort_definition")
+  cohort_definition_name                                        String             @db.VarChar(255)
+  cohort_definition_description                                 String?
+  definition_type_concept_id                                    Int
+  cohort_definition_syntax                                      String?
+  subject_concept_id                                            Int
+  cohort_initiation_date                                        DateTime?          @db.Timestamp(6)
+  cohort_attribute                                              cohort_attribute[]
+  concept_cohort_definition_definition_type_concept_idToconcept concept            @relation("cohort_definition_definition_type_concept_idToconcept", fields: [definition_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_cohort_definition_concept")
+  concept_cohort_definition_subject_concept_idToconcept         concept            @relation("cohort_definition_subject_concept_idToconcept", fields: [subject_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_cohort_subject_concept")
+
+  @@index([cohort_definition_id], map: "idx_cohort_definition_id")
 @@schema("cdm")
 }
 
 model concept {
-  concept_id       Int      @id(map: "xpk_concept")
-  concept_name     String   @db.VarChar(255)
-  domain_id        String   @db.VarChar(20)
-  vocabulary_id    String   @db.VarChar(20)
-  concept_class_id String   @db.VarChar(20)
-  standard_concept String?  @db.VarChar(1)
-  concept_code     String   @db.VarChar(50)
-  valid_start_date DateTime @db.Date
-  valid_end_date   DateTime @db.Date
-  invalid_reason   String?  @db.VarChar(1)
+  concept_id                                                                     Int                     @id(map: "xpk_concept") @unique(map: "idx_concept_concept_id")
+  concept_name                                                                   String                  @db.VarChar(255)
+  domain_id                                                                      String                  @db.VarChar(20)
+  vocabulary_id                                                                  String                  @db.VarChar(20)
+  concept_class_id                                                               String                  @db.VarChar(20)
+  standard_concept                                                               String?                 @db.VarChar(1)
+  concept_code                                                                   String                  @db.VarChar(50)
+  valid_start_date                                                               DateTime                @db.Timestamp(6)
+  valid_end_date                                                                 DateTime                @db.Timestamp(6)
+  invalid_reason                                                                 String?                 @db.VarChar(1)
+  attribute_definition                                                           attribute_definition[]
+  care_site                                                                      care_site[]
+  cohort_attribute                                                               cohort_attribute[]
+  cohort_definition_cohort_definition_definition_type_concept_idToconcept        cohort_definition[]     @relation("cohort_definition_definition_type_concept_idToconcept")
+  cohort_definition_cohort_definition_subject_concept_idToconcept                cohort_definition[]     @relation("cohort_definition_subject_concept_idToconcept")
+  concept_class_concept_concept_class_idToconcept_class                          concept_class           @relation("concept_concept_class_idToconcept_class", fields: [concept_class_id], references: [concept_class_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_class")
+  domain_concept_domain_idTodomain                                               domain                  @relation("concept_domain_idTodomain", fields: [domain_id], references: [domain_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_domain")
+  vocabulary_concept_vocabulary_idTovocabulary                                   vocabulary              @relation("concept_vocabulary_idTovocabulary", fields: [vocabulary_id], references: [vocabulary_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_vocabulary")
+  concept_ancestor_concept_ancestor_ancestor_concept_idToconcept                 concept_ancestor[]      @relation("concept_ancestor_ancestor_concept_idToconcept")
+  concept_ancestor_concept_ancestor_descendant_concept_idToconcept               concept_ancestor[]      @relation("concept_ancestor_descendant_concept_idToconcept")
+  concept_class_concept_class_concept_class_concept_idToconcept                  concept_class[]         @relation("concept_class_concept_class_concept_idToconcept")
+  concept_relationship_concept_relationship_concept_id_1Toconcept                concept_relationship[]  @relation("concept_relationship_concept_id_1Toconcept")
+  concept_relationship_concept_relationship_concept_id_2Toconcept                concept_relationship[]  @relation("concept_relationship_concept_id_2Toconcept")
+  concept_synonym_concept_synonym_concept_idToconcept                            concept_synonym[]       @relation("concept_synonym_concept_idToconcept")
+  concept_synonym_concept_synonym_language_concept_idToconcept                   concept_synonym[]       @relation("concept_synonym_language_concept_idToconcept")
+  condition_era                                                                  condition_era[]
+  condition_occurrence_condition_occurrence_condition_concept_idToconcept        condition_occurrence[]  @relation("condition_occurrence_condition_concept_idToconcept")
+  condition_occurrence_condition_occurrence_condition_source_concept_idToconcept condition_occurrence[]  @relation("condition_occurrence_condition_source_concept_idToconcept")
+  condition_occurrence_condition_occurrence_condition_status_concept_idToconcept condition_occurrence[]  @relation("condition_occurrence_condition_status_concept_idToconcept")
+  condition_occurrence_condition_occurrence_condition_type_concept_idToconcept   condition_occurrence[]  @relation("condition_occurrence_condition_type_concept_idToconcept")
+  cost_cost_drg_concept_idToconcept                                              cost[]                  @relation("cost_drg_concept_idToconcept")
+  cost_cost_currency_concept_idToconcept                                         cost[]                  @relation("cost_currency_concept_idToconcept")
+  death_death_cause_concept_idToconcept                                          death[]                 @relation("death_cause_concept_idToconcept")
+  death_death_cause_source_concept_idToconcept                                   death[]                 @relation("death_cause_source_concept_idToconcept")
+  death_death_death_type_concept_idToconcept                                     death[]                 @relation("death_death_type_concept_idToconcept")
+  device_exposure_device_exposure_device_concept_idToconcept                     device_exposure[]       @relation("device_exposure_device_concept_idToconcept")
+  device_exposure_device_exposure_device_source_concept_idToconcept              device_exposure[]       @relation("device_exposure_device_source_concept_idToconcept")
+  device_exposure_device_exposure_device_type_concept_idToconcept                device_exposure[]       @relation("device_exposure_device_type_concept_idToconcept")
+  domain_domain_domain_concept_idToconcept                                       domain[]                @relation("domain_domain_concept_idToconcept")
+  dose_era_dose_era_drug_concept_idToconcept                                     dose_era[]              @relation("dose_era_drug_concept_idToconcept")
+  dose_era_dose_era_unit_concept_idToconcept                                     dose_era[]              @relation("dose_era_unit_concept_idToconcept")
+  drug_era                                                                       drug_era[]
+  drug_exposure_drug_exposure_drug_concept_idToconcept                           drug_exposure[]         @relation("drug_exposure_drug_concept_idToconcept")
+  drug_exposure_drug_exposure_drug_source_concept_idToconcept                    drug_exposure[]         @relation("drug_exposure_drug_source_concept_idToconcept")
+  drug_exposure_drug_exposure_route_concept_idToconcept                          drug_exposure[]         @relation("drug_exposure_route_concept_idToconcept")
+  drug_exposure_drug_exposure_drug_type_concept_idToconcept                      drug_exposure[]         @relation("drug_exposure_drug_type_concept_idToconcept")
+  drug_strength_drug_strength_drug_concept_idToconcept                           drug_strength[]         @relation("drug_strength_drug_concept_idToconcept")
+  drug_strength_drug_strength_ingredient_concept_idToconcept                     drug_strength[]         @relation("drug_strength_ingredient_concept_idToconcept")
+  drug_strength_drug_strength_amount_unit_concept_idToconcept                    drug_strength[]         @relation("drug_strength_amount_unit_concept_idToconcept")
+  drug_strength_drug_strength_numerator_unit_concept_idToconcept                 drug_strength[]         @relation("drug_strength_numerator_unit_concept_idToconcept")
+  drug_strength_drug_strength_denominator_unit_concept_idToconcept               drug_strength[]         @relation("drug_strength_denominator_unit_concept_idToconcept")
+  fact_relationship_fact_relationship_domain_concept_id_1Toconcept               fact_relationship[]     @relation("fact_relationship_domain_concept_id_1Toconcept") @ignore
+  fact_relationship_fact_relationship_domain_concept_id_2Toconcept               fact_relationship[]     @relation("fact_relationship_domain_concept_id_2Toconcept") @ignore
+  fact_relationship_fact_relationship_relationship_concept_idToconcept           fact_relationship[]     @relation("fact_relationship_relationship_concept_idToconcept") @ignore
+  measurement_measurement_measurement_concept_idToconcept                        measurement[]           @relation("measurement_measurement_concept_idToconcept")
+  measurement_measurement_measurement_source_concept_idToconcept                 measurement[]           @relation("measurement_measurement_source_concept_idToconcept")
+  measurement_measurement_operator_concept_idToconcept                           measurement[]           @relation("measurement_operator_concept_idToconcept")
+  measurement_measurement_measurement_type_concept_idToconcept                   measurement[]           @relation("measurement_measurement_type_concept_idToconcept")
+  measurement_measurement_unit_concept_idToconcept                               measurement[]           @relation("measurement_unit_concept_idToconcept")
+  measurement_measurement_value_as_concept_idToconcept                           measurement[]           @relation("measurement_value_as_concept_idToconcept")
+  note_note_language_concept_idToconcept                                         note[]                  @relation("note_language_concept_idToconcept")
+  note_note_note_class_concept_idToconcept                                       note[]                  @relation("note_note_class_concept_idToconcept")
+  note_note_encoding_concept_idToconcept                                         note[]                  @relation("note_encoding_concept_idToconcept")
+  note_note_note_type_concept_idToconcept                                        note[]                  @relation("note_note_type_concept_idToconcept")
+  note_nlp_note_nlp_note_nlp_concept_idToconcept                                 note_nlp[]              @relation("note_nlp_note_nlp_concept_idToconcept")
+  note_nlp_note_nlp_section_concept_idToconcept                                  note_nlp[]              @relation("note_nlp_section_concept_idToconcept")
+  observation_observation_observation_concept_idToconcept                        observation[]           @relation("observation_observation_concept_idToconcept")
+  observation_observation_observation_source_concept_idToconcept                 observation[]           @relation("observation_observation_source_concept_idToconcept")
+  observation_observation_qualifier_concept_idToconcept                          observation[]           @relation("observation_qualifier_concept_idToconcept")
+  observation_observation_observation_type_concept_idToconcept                   observation[]           @relation("observation_observation_type_concept_idToconcept")
+  observation_observation_unit_concept_idToconcept                               observation[]           @relation("observation_unit_concept_idToconcept")
+  observation_observation_value_as_concept_idToconcept                           observation[]           @relation("observation_value_as_concept_idToconcept")
+  observation_period                                                             observation_period[]
+  person_person_ethnicity_concept_idToconcept                                    person[]                @relation("person_ethnicity_concept_idToconcept")
+  person_person_ethnicity_source_concept_idToconcept                             person[]                @relation("person_ethnicity_source_concept_idToconcept")
+  person_person_gender_concept_idToconcept                                       person[]                @relation("person_gender_concept_idToconcept")
+  person_person_gender_source_concept_idToconcept                                person[]                @relation("person_gender_source_concept_idToconcept")
+  person_person_race_concept_idToconcept                                         person[]                @relation("person_race_concept_idToconcept")
+  person_person_race_source_concept_idToconcept                                  person[]                @relation("person_race_source_concept_idToconcept")
+  procedure_occurrence_procedure_occurrence_procedure_concept_idToconcept        procedure_occurrence[]  @relation("procedure_occurrence_procedure_concept_idToconcept")
+  procedure_occurrence_procedure_occurrence_procedure_source_concept_idToconcept procedure_occurrence[]  @relation("procedure_occurrence_procedure_source_concept_idToconcept")
+  procedure_occurrence_procedure_occurrence_modifier_concept_idToconcept         procedure_occurrence[]  @relation("procedure_occurrence_modifier_concept_idToconcept")
+  procedure_occurrence_procedure_occurrence_procedure_type_concept_idToconcept   procedure_occurrence[]  @relation("procedure_occurrence_procedure_type_concept_idToconcept")
+  provider_provider_gender_concept_idToconcept                                   provider[]              @relation("provider_gender_concept_idToconcept")
+  provider_provider_gender_source_concept_idToconcept                            provider[]              @relation("provider_gender_source_concept_idToconcept")
+  provider_provider_specialty_concept_idToconcept                                provider[]              @relation("provider_specialty_concept_idToconcept")
+  provider_provider_specialty_source_concept_idToconcept                         provider[]              @relation("provider_specialty_source_concept_idToconcept")
+  relationship                                                                   relationship[]
+  source_to_concept_map_source_to_concept_map_source_concept_idToconcept         source_to_concept_map[] @relation("source_to_concept_map_source_concept_idToconcept")
+  source_to_concept_map_source_to_concept_map_target_concept_idToconcept         source_to_concept_map[] @relation("source_to_concept_map_target_concept_idToconcept")
+  specimen_specimen_specimen_concept_idToconcept                                 specimen[]              @relation("specimen_specimen_concept_idToconcept")
+  specimen_specimen_anatomic_site_concept_idToconcept                            specimen[]              @relation("specimen_anatomic_site_concept_idToconcept")
+  specimen_specimen_disease_status_concept_idToconcept                           specimen[]              @relation("specimen_disease_status_concept_idToconcept")
+  specimen_specimen_specimen_type_concept_idToconcept                            specimen[]              @relation("specimen_specimen_type_concept_idToconcept")
+  specimen_specimen_unit_concept_idToconcept                                     specimen[]              @relation("specimen_unit_concept_idToconcept")
+  visit_detail_visit_detail_admitting_source_concept_idToconcept                 visit_detail[]          @relation("visit_detail_admitting_source_concept_idToconcept")
+  visit_detail_visit_detail_visit_detail_source_concept_idToconcept              visit_detail[]          @relation("visit_detail_visit_detail_source_concept_idToconcept")
+  visit_detail_visit_detail_discharge_to_concept_idToconcept                     visit_detail[]          @relation("visit_detail_discharge_to_concept_idToconcept")
+  visit_detail_visit_detail_visit_detail_type_concept_idToconcept                visit_detail[]          @relation("visit_detail_visit_detail_type_concept_idToconcept")
+  visit_occurrence_visit_occurrence_admitting_source_concept_idToconcept         visit_occurrence[]      @relation("visit_occurrence_admitting_source_concept_idToconcept")
+  visit_occurrence_visit_occurrence_visit_source_concept_idToconcept             visit_occurrence[]      @relation("visit_occurrence_visit_source_concept_idToconcept")
+  visit_occurrence_visit_occurrence_discharge_to_concept_idToconcept             visit_occurrence[]      @relation("visit_occurrence_discharge_to_concept_idToconcept")
+  visit_occurrence_visit_occurrence_visit_type_concept_idToconcept               visit_occurrence[]      @relation("visit_occurrence_visit_type_concept_idToconcept")
+  vocabulary_vocabulary_vocabulary_concept_idToconcept                           vocabulary[]            @relation("vocabulary_vocabulary_concept_idToconcept")
+
+  @@index([concept_class_id], map: "idx_concept_class_id")
+  @@index([concept_code], map: "idx_concept_code")
+  @@index([domain_id], map: "idx_concept_domain_id")
+  @@index([vocabulary_id], map: "idx_concept_vocabluary_id")
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model concept_ancestor {
-  ancestor_concept_id      Int
-  descendant_concept_id    Int
-  min_levels_of_separation Int
-  max_levels_of_separation Int
+  ancestor_concept_id                                     Int
+  descendant_concept_id                                   Int
+  min_levels_of_separation                                Int
+  max_levels_of_separation                                Int
+  concept_concept_ancestor_ancestor_concept_idToconcept   concept @relation("concept_ancestor_ancestor_concept_idToconcept", fields: [ancestor_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_ancestor_concept_1")
+  concept_concept_ancestor_descendant_concept_idToconcept concept @relation("concept_ancestor_descendant_concept_idToconcept", fields: [descendant_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_ancestor_concept_2")
 
-  @@ignore
+  @@id([ancestor_concept_id, descendant_concept_id], map: "xpk_concept_ancestor")
+  @@index([ancestor_concept_id], map: "idx_concept_ancestor_id_1")
+  @@index([descendant_concept_id], map: "idx_concept_ancestor_id_2")
 @@schema("cdm")
 }
 
 model concept_class {
-  concept_class_id         String @id(map: "xpk_concept_class") @db.VarChar(20)
-  concept_class_name       String @db.VarChar(255)
-  concept_class_concept_id Int
+  concept_class_id                                        String    @id(map: "xpk_concept_class") @unique(map: "idx_concept_class_class_id") @db.VarChar(20)
+  concept_class_name                                      String    @db.VarChar(255)
+  concept_class_concept_id                                Int
+  concept_concept_concept_class_idToconcept_class         concept[] @relation("concept_concept_class_idToconcept_class")
+  concept_concept_class_concept_class_concept_idToconcept concept   @relation("concept_class_concept_class_concept_idToconcept", fields: [concept_class_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_class_concept")
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model concept_relationship {
-  concept_id_1     Int
-  concept_id_2     Int
-  relationship_id  String   @db.VarChar(20)
-  valid_start_date DateTime @db.Date
-  valid_end_date   DateTime @db.Date
-  invalid_reason   String?  @db.VarChar(1)
+  concept_id_1                                       Int
+  concept_id_2                                       Int
+  relationship_id                                    String       @db.VarChar(20)
+  valid_start_date                                   DateTime     @db.Timestamp(6)
+  valid_end_date                                     DateTime     @db.Timestamp(6)
+  invalid_reason                                     String?      @db.VarChar(1)
+  concept_concept_relationship_concept_id_1Toconcept concept      @relation("concept_relationship_concept_id_1Toconcept", fields: [concept_id_1], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_relationship_c_1")
+  concept_concept_relationship_concept_id_2Toconcept concept      @relation("concept_relationship_concept_id_2Toconcept", fields: [concept_id_2], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_relationship_c_2")
+  relationship                                       relationship @relation(fields: [relationship_id], references: [relationship_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_relationship_id")
 
-  @@ignore
+  @@id([concept_id_1, concept_id_2, relationship_id], map: "xpk_concept_relationship")
+  @@index([concept_id_1], map: "idx_concept_relationship_id_1")
+  @@index([concept_id_2], map: "idx_concept_relationship_id_2")
+  @@index([relationship_id], map: "idx_concept_relationship_id_3")
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model concept_synonym {
-  concept_id           Int
-  concept_synonym_name String @db.VarChar(1000)
-  language_concept_id  Int
+  concept_id                                           Int
+  concept_synonym_name                                 String  @db.VarChar(1000)
+  language_concept_id                                  Int
+  concept_concept_synonym_concept_idToconcept          concept @relation("concept_synonym_concept_idToconcept", fields: [concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_synonym_concept")
+  concept_concept_synonym_language_concept_idToconcept concept @relation("concept_synonym_language_concept_idToconcept", fields: [language_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_concept_synonym_language")
 
-  @@ignore
+  @@unique([concept_id, concept_synonym_name, language_concept_id], map: "uq_concept_synonym")
+  @@index([concept_id], map: "idx_concept_synonym_id")
 @@schema("cdm")
 }
 
 model condition_era {
   condition_era_id           Int      @id(map: "xpk_condition_era")
-  person_id                  Int
+  person_id                  BigInt
   condition_concept_id       Int
-  condition_era_start_date   DateTime @db.Date
-  condition_era_end_date     DateTime @db.Date
+  condition_era_start_date   DateTime @db.Timestamp(6)
+  condition_era_end_date     DateTime @db.Timestamp(6)
   condition_occurrence_count Int?
+  concept                    concept  @relation(fields: [condition_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_condition_era_concept")
+
+  @@index([condition_concept_id], map: "idx_condition_era_concept_id")
+  @@index([person_id], map: "idx_condition_era_person_id")
 @@schema("cdm")
 }
 
 model condition_occurrence {
-  condition_occurrence_id       Int       @id(map: "xpk_condition_occurrence")
-  person_id                     Int
-  condition_concept_id          Int
-  condition_start_date          DateTime  @db.Date
-  condition_start_datetime      DateTime? @db.Timestamp(6)
-  condition_end_date            DateTime? @db.Date
-  condition_end_datetime        DateTime? @db.Timestamp(6)
-  condition_type_concept_id     Int
-  condition_status_concept_id   Int?
-  stop_reason                   String?   @db.VarChar(20)
-  provider_id                   Int?
-  visit_occurrence_id           Int?
-  visit_detail_id               Int?
-  condition_source_value        String?   @db.VarChar(50)
-  condition_source_concept_id   Int?
-  condition_status_source_value String?   @db.VarChar(50)
+  condition_occurrence_id                                           BigInt    @id(map: "xpk_condition_occurrence")
+  person_id                                                         BigInt?
+  condition_concept_id                                              Int?
+  condition_start_date                                              DateTime? @db.Timestamp(6)
+  condition_start_datetime                                          DateTime? @db.Timestamp(6)
+  condition_end_date                                                DateTime? @db.Timestamp(6)
+  condition_end_datetime                                            DateTime? @db.Timestamp(6)
+  condition_type_concept_id                                         Int?
+  stop_reason                                                       String?   @db.VarChar(20)
+  provider_id                                                       Int?
+  visit_occurrence_id                                               BigInt?
+  visit_detail_id                                                   Int?
+  condition_source_value                                            String?   @db.VarChar(50)
+  condition_source_concept_id                                       Int?
+  condition_status_source_value                                     String?   @db.VarChar(50)
+  condition_status_concept_id                                       Int?
+  concept_condition_occurrence_condition_concept_idToconcept        concept?  @relation("condition_occurrence_condition_concept_idToconcept", fields: [condition_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_condition_concept")
+  concept_condition_occurrence_condition_source_concept_idToconcept concept?  @relation("condition_occurrence_condition_source_concept_idToconcept", fields: [condition_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_condition_concept_s")
+  provider                                                          provider? @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_condition_provider")
+  concept_condition_occurrence_condition_status_concept_idToconcept concept?  @relation("condition_occurrence_condition_status_concept_idToconcept", fields: [condition_status_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_condition_status_concept")
+  concept_condition_occurrence_condition_type_concept_idToconcept   concept?  @relation("condition_occurrence_condition_type_concept_idToconcept", fields: [condition_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_condition_type_concept")
+
+  @@index([condition_concept_id], map: "idx_condition_concept_id")
+  @@index([condition_end_date], map: "idx_condition_occurrence_end_date")
+  @@index([condition_start_date], map: "idx_condition_occurrence_start_date")
+  @@index([person_id], map: "idx_condition_person_id")
+  @@index([visit_occurrence_id], map: "idx_condition_visit_id")
+
 @@schema("cdm")
 }
 
 model cost {
-  cost_id                   Int      @id(map: "xpk_cost")
-  cost_event_id             Int
-  cost_domain_id            String   @db.VarChar(20)
-  cost_type_concept_id      Int
-  currency_concept_id       Int?
-  total_charge              Decimal? @db.Decimal
-  total_cost                Decimal? @db.Decimal
-  total_paid                Decimal? @db.Decimal
-  paid_by_payer             Decimal? @db.Decimal
-  paid_by_patient           Decimal? @db.Decimal
-  paid_patient_copay        Decimal? @db.Decimal
-  paid_patient_coinsurance  Decimal? @db.Decimal
-  paid_patient_deductible   Decimal? @db.Decimal
-  paid_by_primary           Decimal? @db.Decimal
-  paid_ingredient_cost      Decimal? @db.Decimal
-  paid_dispensing_fee       Decimal? @db.Decimal
-  payer_plan_period_id      Int?
-  amount_allowed            Decimal? @db.Decimal
-  revenue_code_concept_id   Int?
-  revenue_code_source_value String?  @db.VarChar(50)
-  drg_concept_id            Int?
-  drg_source_value          String?  @db.VarChar(3)
+  cost_id                                   Int                @id(map: "xpk_visit_cost")
+  cost_event_id                             Int
+  cost_domain_id                            String             @db.VarChar(20)
+  cost_type_concept_id                      Int
+  currency_concept_id                       Int?
+  total_charge                              Decimal?           @db.Decimal
+  total_cost                                Decimal?           @db.Decimal
+  total_paid                                Decimal?           @db.Decimal
+  paid_by_payer                             Decimal?           @db.Decimal
+  paid_by_patient                           Decimal?           @db.Decimal
+  paid_patient_copay                        Decimal?           @db.Decimal
+  paid_patient_coinsurance                  Decimal?           @db.Decimal
+  paid_patient_deductible                   Decimal?           @db.Decimal
+  paid_by_primary                           Decimal?           @db.Decimal
+  paid_ingredient_cost                      Decimal?           @db.Decimal
+  paid_dispensing_fee                       Decimal?           @db.Decimal
+  payer_plan_period_id                      BigInt?
+  amount_allowed                            Decimal?           @db.Decimal
+  revenue_code_concept_id                   Int?
+  revenue_code_source_value                 String?            @db.VarChar(50)
+  drg_concept_id                            Int?
+  drg_source_value                          String?            @db.VarChar(3)
+  concept_cost_drg_concept_idToconcept      concept?           @relation("cost_drg_concept_idToconcept", fields: [drg_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drg_concept")
+  concept_cost_currency_concept_idToconcept concept?           @relation("cost_currency_concept_idToconcept", fields: [currency_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_cost_currency")
+  payer_plan_period                         payer_plan_period? @relation(fields: [payer_plan_period_id], references: [payer_plan_period_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_cost_period")
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model death {
-  person_id               Int
-  death_date              DateTime  @db.Date
-  death_datetime          DateTime? @db.Timestamp(6)
-  death_type_concept_id   Int?
-  cause_concept_id        Int?
-  cause_source_value      String?   @db.VarChar(50)
-  cause_source_concept_id Int?
+  person_id                                      BigInt    @id(map: "xpk_death")
+  death_date                                     DateTime? @db.Timestamp(6)
+  death_datetime                                 DateTime? @db.Timestamp(6)
+  death_type_concept_id                          Int?
+  cause_concept_id                               Int?
+  cause_source_value                             String?   @db.VarChar(50)
+  cause_source_concept_id                        Int?
+  concept_death_cause_concept_idToconcept        concept?  @relation("death_cause_concept_idToconcept", fields: [cause_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_death_cause_concept")
+  concept_death_cause_source_concept_idToconcept concept?  @relation("death_cause_source_concept_idToconcept", fields: [cause_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_death_cause_concept_s")
+  person                                         person    @relation(fields: [person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_death_person")
+  concept_death_death_type_concept_idToconcept   concept?  @relation("death_death_type_concept_idToconcept", fields: [death_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_death_type_concept")
 
-  @@ignore
+  @@index([death_date], map: "idx_death_death_date")
+  @@index([person_id], map: "idx_death_person_id")
 @@schema("cdm")
 }
 
 model device_exposure {
-  device_exposure_id             Int       @id(map: "xpk_device_exposure")
-  person_id                      Int
-  device_concept_id              Int
-  device_exposure_start_date     DateTime  @db.Date
-  device_exposure_start_datetime DateTime? @db.Timestamp(6)
-  device_exposure_end_date       DateTime? @db.Date
-  device_exposure_end_datetime   DateTime? @db.Timestamp(6)
-  device_type_concept_id         Int
-  unique_device_id               String?   @db.VarChar(255)
-  production_id                  String?   @db.VarChar(255)
-  quantity                       Int?
-  provider_id                    Int?
-  visit_occurrence_id            Int?
-  visit_detail_id                Int?
-  device_source_value            String?   @db.VarChar(50)
-  device_source_concept_id       Int?
-  unit_concept_id                Int?
-  unit_source_value              String?   @db.VarChar(50)
-  unit_source_concept_id         Int?
+  device_exposure_id                                        BigInt    @id(map: "xpk_device_exposure")
+  person_id                                                 BigInt?
+  device_concept_id                                         Int?
+  device_exposure_start_date                                DateTime? @db.Timestamp(6)
+  device_exposure_start_datetime                            DateTime? @db.Timestamp(6)
+  device_exposure_end_date                                  DateTime? @db.Timestamp(6)
+  device_exposure_end_datetime                              DateTime? @db.Timestamp(6)
+  device_type_concept_id                                    Int?
+  unique_device_id                                          String?   @db.VarChar(50)
+  quantity                                                  Int?
+  provider_id                                               Int?
+  visit_occurrence_id                                       BigInt?
+  visit_detail_id                                           Int?
+  device_source_value                                       String?   @db.VarChar(100)
+  device_source_concept_id                                  Int?
+  concept_device_exposure_device_concept_idToconcept        concept?  @relation("device_exposure_device_concept_idToconcept", fields: [device_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_device_concept")
+  concept_device_exposure_device_source_concept_idToconcept concept?  @relation("device_exposure_device_source_concept_idToconcept", fields: [device_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_device_concept_s")
+  person                                                    person?   @relation(fields: [person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_device_person")
+  provider                                                  provider? @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_device_provider")
+  concept_device_exposure_device_type_concept_idToconcept   concept?  @relation("device_exposure_device_type_concept_idToconcept", fields: [device_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_device_type_concept")
+
+  @@index([device_concept_id], map: "idx_device_concept_id")
+  @@index([person_id], map: "idx_device_person_id")
+  @@index([visit_occurrence_id], map: "idx_device_visit_id")
 @@schema("cdm")
 }
 
 model domain {
-  domain_id         String @id(map: "xpk_domain") @db.VarChar(20)
-  domain_name       String @db.VarChar(255)
-  domain_concept_id Int
+  domain_id                                 String    @id(map: "xpk_domain") @unique(map: "idx_domain_domain_id") @db.VarChar(20)
+  domain_name                               String?   @db.VarChar(255)
+  domain_concept_id                         Int?
+  concept_concept_domain_idTodomain         concept[] @relation("concept_domain_idTodomain")
+  concept_domain_domain_concept_idToconcept concept?  @relation("domain_domain_concept_idToconcept", fields: [domain_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_domain_concept")
 @@schema("cdm")
 }
 
 model dose_era {
-  dose_era_id         Int      @id(map: "xpk_dose_era")
-  person_id           Int
-  drug_concept_id     Int
-  unit_concept_id     Int
-  dose_value          Decimal  @db.Decimal
-  dose_era_start_date DateTime @db.Date
-  dose_era_end_date   DateTime @db.Date
+  dose_era_id                               Int      @id(map: "xpk_dose_era")
+  person_id                                 BigInt
+  drug_concept_id                           Int
+  unit_concept_id                           Int
+  dose_value                                Decimal  @db.Decimal
+  dose_era_start_date                       DateTime @db.Timestamp(6)
+  dose_era_end_date                         DateTime @db.Timestamp(6)
+  concept_dose_era_drug_concept_idToconcept concept  @relation("dose_era_drug_concept_idToconcept", fields: [drug_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_dose_era_concept")
+  person                                    person   @relation(fields: [person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_dose_era_person")
+  concept_dose_era_unit_concept_idToconcept concept  @relation("dose_era_unit_concept_idToconcept", fields: [unit_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_dose_era_unit_concept")
+
+  @@index([drug_concept_id], map: "idx_dose_era_concept_id")
+  @@index([person_id], map: "idx_dose_era_person_id")
 @@schema("cdm")
 }
 
 model drug_era {
   drug_era_id         Int      @id(map: "xpk_drug_era")
-  person_id           Int
+  person_id           BigInt
   drug_concept_id     Int
-  drug_era_start_date DateTime @db.Date
-  drug_era_end_date   DateTime @db.Date
+  drug_era_start_date DateTime @db.Timestamp(6)
+  drug_era_end_date   DateTime @db.Timestamp(6)
   drug_exposure_count Int?
   gap_days            Int?
+  concept             concept  @relation(fields: [drug_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_era_concept")
+
+  @@index([drug_concept_id], map: "idx_drug_era_concept_id")
+  @@index([person_id], map: "idx_drug_era_person_id")
 @@schema("cdm")
 }
 
 model drug_exposure {
-  drug_exposure_id             Int       @id(map: "xpk_drug_exposure")
-  person_id                    Int
-  drug_concept_id              Int
-  drug_exposure_start_date     DateTime  @db.Date
-  drug_exposure_start_datetime DateTime? @db.Timestamp(6)
-  drug_exposure_end_date       DateTime  @db.Date
-  drug_exposure_end_datetime   DateTime? @db.Timestamp(6)
-  verbatim_end_date            DateTime? @db.Date
-  drug_type_concept_id         Int
-  stop_reason                  String?   @db.VarChar(20)
-  refills                      Int?
-  quantity                     Decimal?  @db.Decimal
-  days_supply                  Int?
-  sig                          String?
-  route_concept_id             Int?
-  lot_number                   String?   @db.VarChar(50)
-  provider_id                  Int?
-  visit_occurrence_id          Int?
-  visit_detail_id              Int?
-  drug_source_value            String?   @db.VarChar(50)
-  drug_source_concept_id       Int?
-  route_source_value           String?   @db.VarChar(50)
-  dose_unit_source_value       String?   @db.VarChar(50)
+  drug_exposure_id                                      BigInt    @id(map: "xpk_drug_exposure")
+  person_id                                             BigInt?
+  drug_concept_id                                       Int?
+  drug_exposure_start_date                              DateTime? @db.Timestamp(6)
+  drug_exposure_start_datetime                          DateTime? @db.Timestamp(6)
+  drug_exposure_end_date                                DateTime? @db.Timestamp(6)
+  drug_exposure_end_datetime                            DateTime? @db.Timestamp(6)
+  verbatim_end_date                                     DateTime? @db.Timestamp(6)
+  drug_type_concept_id                                  Int?
+  stop_reason                                           String?   @db.VarChar(20)
+  refills                                               Int?
+  quantity                                              Decimal?  @db.Decimal
+  days_supply                                           Int?
+  sig                                                   String?
+  route_concept_id                                      Int?
+  lot_number                                            String?   @db.VarChar(50)
+  provider_id                                           Int?
+  visit_occurrence_id                                   BigInt?
+  visit_detail_id                                       Int?
+  drug_source_value                                     String?   @db.VarChar(50)
+  drug_source_concept_id                                Int?
+  route_source_value                                    String?   @db.VarChar(50)
+  dose_unit_source_value                                String?   @db.VarChar(50)
+  concept_drug_exposure_drug_concept_idToconcept        concept?  @relation("drug_exposure_drug_concept_idToconcept", fields: [drug_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_concept")
+  concept_drug_exposure_drug_source_concept_idToconcept concept?  @relation("drug_exposure_drug_source_concept_idToconcept", fields: [drug_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_concept_s")
+  provider                                              provider? @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_provider")
+  concept_drug_exposure_route_concept_idToconcept       concept?  @relation("drug_exposure_route_concept_idToconcept", fields: [route_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_route_concept")
+  concept_drug_exposure_drug_type_concept_idToconcept   concept?  @relation("drug_exposure_drug_type_concept_idToconcept", fields: [drug_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_type_concept")
+
+  @@index([drug_concept_id], map: "idx_drug_concept_id")
+  @@index([drug_exposure_end_date], map: "idx_drug_exposure_end_date")
+  @@index([drug_exposure_start_date], map: "idx_drug_exposure_start_date")
+  @@index([person_id], map: "idx_drug_person_id")
+  @@index([visit_occurrence_id], map: "idx_drug_visit_id")
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model drug_strength {
-  drug_concept_id             Int
-  ingredient_concept_id       Int
-  amount_value                Decimal? @db.Decimal
-  amount_unit_concept_id      Int?
-  numerator_value             Decimal? @db.Decimal
-  numerator_unit_concept_id   Int?
-  denominator_value           Decimal? @db.Decimal
-  denominator_unit_concept_id Int?
-  box_size                    Int?
-  valid_start_date            DateTime @db.Date
-  valid_end_date              DateTime @db.Date
-  invalid_reason              String?  @db.VarChar(1)
+  drug_concept_id                                            Int
+  ingredient_concept_id                                      Int
+  amount_value                                               Decimal? @db.Decimal(20, 0)
+  amount_unit_concept_id                                     Int?
+  numerator_value                                            Decimal? @db.Decimal(20, 0)
+  numerator_unit_concept_id                                  Int?
+  denominator_value                                          Decimal? @db.Decimal(20, 0)
+  denominator_unit_concept_id                                Int?
+  box_size                                                   Int?
+  valid_start_date                                           DateTime @db.Timestamp(6)
+  valid_end_date                                             DateTime @db.Timestamp(6)
+  invalid_reason                                             String?  @db.VarChar(1)
+  concept_drug_strength_drug_concept_idToconcept             concept  @relation("drug_strength_drug_concept_idToconcept", fields: [drug_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_strength_concept_1")
+  concept_drug_strength_ingredient_concept_idToconcept       concept  @relation("drug_strength_ingredient_concept_idToconcept", fields: [ingredient_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_strength_concept_2")
+  concept_drug_strength_amount_unit_concept_idToconcept      concept? @relation("drug_strength_amount_unit_concept_idToconcept", fields: [amount_unit_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_strength_unit_1")
+  concept_drug_strength_numerator_unit_concept_idToconcept   concept? @relation("drug_strength_numerator_unit_concept_idToconcept", fields: [numerator_unit_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_strength_unit_2")
+  concept_drug_strength_denominator_unit_concept_idToconcept concept? @relation("drug_strength_denominator_unit_concept_idToconcept", fields: [denominator_unit_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_drug_strength_unit_3")
 
-  @@ignore
-@@schema("cdm")
-}
-
-model episode {
-  episode_id                Int       @id(map: "xpk_episode")
-  person_id                 Int
-  episode_concept_id        Int
-  episode_start_date        DateTime  @db.Date
-  episode_start_datetime    DateTime? @db.Timestamp(6)
-  episode_end_date          DateTime? @db.Date
-  episode_end_datetime      DateTime? @db.Timestamp(6)
-  episode_parent_id         Int?
-  episode_number            Int?
-  episode_object_concept_id Int
-  episode_type_concept_id   Int
-  episode_source_value      String?   @db.VarChar(50)
-  episode_source_concept_id Int?
-@@schema("cdm")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model episode_event {
-  episode_id                     Int
-  event_id                       Int
-  episode_event_field_concept_id Int
-
-  @@ignore
+  @@id([drug_concept_id, ingredient_concept_id], map: "xpk_drug_strength")
+  @@index([drug_concept_id], map: "idx_drug_strength_id_1")
+  @@index([ingredient_concept_id], map: "idx_drug_strength_id_2")
 @@schema("cdm")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model fact_relationship {
-  domain_concept_id_1     Int
-  fact_id_1               Int
-  domain_concept_id_2     Int
-  fact_id_2               Int
-  relationship_concept_id Int
+  domain_concept_id_1                                        Int
+  fact_id_1                                                  Int
+  domain_concept_id_2                                        Int
+  fact_id_2                                                  Int
+  relationship_concept_id                                    Int
+  concept_fact_relationship_domain_concept_id_1Toconcept     concept @relation("fact_relationship_domain_concept_id_1Toconcept", fields: [domain_concept_id_1], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_fact_domain_1")
+  concept_fact_relationship_domain_concept_id_2Toconcept     concept @relation("fact_relationship_domain_concept_id_2Toconcept", fields: [domain_concept_id_2], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_fact_domain_2")
+  concept_fact_relationship_relationship_concept_idToconcept concept @relation("fact_relationship_relationship_concept_idToconcept", fields: [relationship_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_fact_relationship")
 
-  @@ignore
-@@schema("cdm")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model final_visit_ids {
-  encounter_id            String? @db.VarChar(1000)
-  visit_occurrence_id_new BigInt?
-
+  @@index([domain_concept_id_1], map: "idx_fact_relationship_id_1")
+  @@index([domain_concept_id_2], map: "idx_fact_relationship_id_2")
+  @@index([relationship_concept_id], map: "idx_fact_relationship_id_3")
   @@ignore
 @@schema("cdm")
 }
 
 model location {
-  location_id           Int      @id(map: "xpk_location")
-  address_1             String?  @db.VarChar(50)
-  address_2             String?  @db.VarChar(50)
-  city                  String?  @db.VarChar(50)
-  state                 String?  @db.VarChar(2)
-  zip                   String?  @db.VarChar(9)
-  county                String?  @db.VarChar(20)
-  location_source_value String?  @db.VarChar(50)
-  country_concept_id    Int?
-  country_source_value  String?  @db.VarChar(80)
-  latitude              Decimal? @db.Decimal
-  longitude             Decimal? @db.Decimal
+  location_id           BigInt      @id(map: "xpk_location")
+  address_1             String?
+  address_2             String?
+  city                  String?
+  state                 String?
+  zip                   String?
+  county                String?
+  location_source_value String?     @db.VarChar(50)
+  care_site             care_site[]
+  person                person[]
 @@schema("cdm")
 }
 
 model measurement {
-  measurement_id                Int       @id(map: "xpk_measurement")
-  person_id                     Int
-  measurement_concept_id        Int
-  measurement_date              DateTime  @db.Date
-  measurement_datetime          DateTime? @db.Timestamp(6)
-  measurement_time              String?   @db.VarChar(10)
-  measurement_type_concept_id   Int
-  operator_concept_id           Int?
-  value_as_number               Decimal?  @db.Decimal
-  value_as_concept_id           Int?
-  unit_concept_id               Int?
-  range_low                     Decimal?  @db.Decimal
-  range_high                    Decimal?  @db.Decimal
-  provider_id                   Int?
-  visit_occurrence_id           Int?
-  visit_detail_id               Int?
-  measurement_source_value      String?   @db.VarChar(50)
-  measurement_source_concept_id Int?
-  unit_source_value             String?   @db.VarChar(50)
-  unit_source_concept_id        Int?
-  value_source_value            String?   @db.VarChar(50)
-  measurement_event_id          Int?
-  meas_event_field_concept_id   Int?
-@@schema("cdm")
-}
+  measurement_id                                             BigInt    @id(map: "xpk_measurement")
+  person_id                                                  BigInt?
+  measurement_concept_id                                     Int?
+  measurement_date                                           DateTime? @db.Timestamp(6)
+  measurement_datetime                                       DateTime? @db.Timestamp(6)
+  measurement_type_concept_id                                Int?
+  operator_concept_id                                        Int?
+  value_as_number                                            Decimal?  @db.Decimal
+  value_as_concept_id                                        Int?
+  unit_concept_id                                            Int?
+  range_low                                                  Decimal?  @db.Decimal
+  range_high                                                 Decimal?  @db.Decimal
+  provider_id                                                Int?
+  visit_occurrence_id                                        BigInt?
+  measurement_source_value                                   String?   @db.VarChar(50)
+  measurement_source_concept_id                              Int?
+  unit_source_value                                          String?   @db.VarChar(50)
+  value_source_value                                         String?   @db.VarChar(50)
+  concept_measurement_measurement_concept_idToconcept        concept?  @relation("measurement_measurement_concept_idToconcept", fields: [measurement_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_measurement_concept")
+  concept_measurement_measurement_source_concept_idToconcept concept?  @relation("measurement_measurement_source_concept_idToconcept", fields: [measurement_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_measurement_concept_s")
+  concept_measurement_operator_concept_idToconcept           concept?  @relation("measurement_operator_concept_idToconcept", fields: [operator_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_measurement_operator")
+  provider                                                   provider? @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_measurement_provider")
+  concept_measurement_measurement_type_concept_idToconcept   concept?  @relation("measurement_measurement_type_concept_idToconcept", fields: [measurement_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_measurement_type_concept")
+  concept_measurement_unit_concept_idToconcept               concept?  @relation("measurement_unit_concept_idToconcept", fields: [unit_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_measurement_unit")
+  concept_measurement_value_as_concept_idToconcept           concept?  @relation("measurement_value_as_concept_idToconcept", fields: [value_as_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_measurement_value")
 
-model metadata {
-  metadata_id              Int       @id(map: "xpk_metadata")
-  metadata_concept_id      Int
-  metadata_type_concept_id Int
-  name                     String    @db.VarChar(250)
-  value_as_string          String?   @db.VarChar(250)
-  value_as_concept_id      Int?
-  value_as_number          Decimal?  @db.Decimal
-  metadata_date            DateTime? @db.Date
-  metadata_datetime        DateTime? @db.Timestamp(6)
+  @@index([measurement_concept_id], map: "idx_measurement_concept_id")
+  @@index([measurement_date], map: "idx_measurement_measurment_date")
+  @@index([person_id], map: "idx_measurement_person_id")
+  @@index([visit_occurrence_id], map: "idx_measurement_visit_id")
 @@schema("cdm")
 }
 
 model note {
-  note_id                     Int       @id(map: "xpk_note")
-  person_id                   Int
-  note_date                   DateTime  @db.Date
-  note_datetime               DateTime? @db.Timestamp(6)
-  note_type_concept_id        Int
-  note_class_concept_id       Int
-  note_title                  String?   @db.VarChar(250)
-  note_text                   String
-  encoding_concept_id         Int
-  language_concept_id         Int
-  provider_id                 Int?
-  visit_occurrence_id         Int?
-  visit_detail_id             Int?
-  note_source_value           String?   @db.VarChar(50)
-  note_event_id               Int?
-  note_event_field_concept_id Int?
+  note_id                                     Int        @id(map: "xpk_note")
+  person_id                                   BigInt
+  note_date                                   DateTime   @db.Timestamp(6)
+  note_datetime                               DateTime?  @db.Timestamp(6)
+  note_type_concept_id                        Int
+  note_class_concept_id                       Int
+  note_title                                  String?    @db.VarChar(250)
+  note_text                                   String?
+  encoding_concept_id                         Int
+  language_concept_id                         Int
+  provider_id                                 Int?
+  visit_occurrence_id                         Int?
+  visit_detail_id                             Int?
+  note_source_value                           String?    @db.VarChar(50)
+  concept_note_language_concept_idToconcept   concept    @relation("note_language_concept_idToconcept", fields: [language_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_language_concept")
+  concept_note_note_class_concept_idToconcept concept    @relation("note_note_class_concept_idToconcept", fields: [note_class_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_class_concept")
+  concept_note_encoding_concept_idToconcept   concept    @relation("note_encoding_concept_idToconcept", fields: [encoding_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_encoding_concept")
+  person                                      person     @relation(fields: [person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_person")
+  provider                                    provider?  @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_provider")
+  concept_note_note_type_concept_idToconcept  concept    @relation("note_note_type_concept_idToconcept", fields: [note_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_type_concept")
+  note_nlp                                    note_nlp[]
+
+  @@index([note_type_concept_id], map: "idx_note_concept_id")
+  @@index([person_id], map: "idx_note_person_id")
+  @@index([visit_occurrence_id], map: "idx_note_visit_id")
 @@schema("cdm")
 }
 
 model note_nlp {
-  note_nlp_id                Int       @id(map: "xpk_note_nlp")
-  note_id                    Int
-  section_concept_id         Int?
-  snippet                    String?   @db.VarChar(250)
-  offset                     String?   @db.VarChar(50)
-  lexical_variant            String    @db.VarChar(250)
-  note_nlp_concept_id        Int?
-  note_nlp_source_concept_id Int?
-  nlp_system                 String?   @db.VarChar(250)
-  nlp_date                   DateTime  @db.Date
-  nlp_datetime               DateTime? @db.Timestamp(6)
-  term_exists                String?   @db.VarChar(1)
-  term_temporal              String?   @db.VarChar(50)
-  term_modifiers             String?   @db.VarChar(2000)
+  note_nlp_id                                   Int       @id(map: "xpk_note_nlp")
+  note_id                                       Int
+  section_concept_id                            Int?
+  snippet                                       String?   @db.VarChar(250)
+  offset                                        String?   @db.VarChar(250)
+  lexical_variant                               String    @db.VarChar(250)
+  note_nlp_concept_id                           Int?
+  note_nlp_source_concept_id                    Int?
+  nlp_system                                    String?   @db.VarChar(250)
+  nlp_date                                      DateTime  @db.Timestamp(6)
+  nlp_datetime                                  DateTime? @db.Timestamp(6)
+  term_exists                                   String?   @db.VarChar(1)
+  term_temporal                                 String?   @db.VarChar(50)
+  term_modifiers                                String?   @db.VarChar(2000)
+  concept_note_nlp_note_nlp_concept_idToconcept concept?  @relation("note_nlp_note_nlp_concept_idToconcept", fields: [note_nlp_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_nlp_concept")
+  note                                          note      @relation(fields: [note_id], references: [note_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_nlp_note")
+  concept_note_nlp_section_concept_idToconcept  concept?  @relation("note_nlp_section_concept_idToconcept", fields: [section_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_note_nlp_section_concept")
+
+  @@index([note_nlp_concept_id], map: "idx_note_nlp_concept_id")
+  @@index([note_id], map: "idx_note_nlp_note_id")
 @@schema("cdm")
 }
 
 model observation {
-  observation_id                Int       @id(map: "xpk_observation")
-  person_id                     Int
-  observation_concept_id        Int
-  observation_date              DateTime  @db.Date
-  observation_datetime          DateTime? @db.Timestamp(6)
-  observation_type_concept_id   Int
-  value_as_number               Decimal?  @db.Decimal
-  value_as_string               String?   @db.VarChar(60)
-  value_as_concept_id           Int?
-  qualifier_concept_id          Int?
-  unit_concept_id               Int?
-  provider_id                   Int?
-  visit_occurrence_id           Int?
-  visit_detail_id               Int?
-  observation_source_value      String?   @db.VarChar(50)
-  observation_source_concept_id Int?
-  unit_source_value             String?   @db.VarChar(50)
-  qualifier_source_value        String?   @db.VarChar(50)
-  value_source_value            String?   @db.VarChar(50)
-  observation_event_id          Int?
-  obs_event_field_concept_id    Int?
+  observation_id                                             BigInt    @id(map: "xpk_observation")
+  person_id                                                  BigInt?
+  observation_concept_id                                     Int?
+  observation_date                                           DateTime? @db.Timestamp(6)
+  observation_datetime                                       DateTime? @db.Timestamp(6)
+  observation_type_concept_id                                Int?
+  value_as_number                                            Decimal?  @db.Decimal
+  value_as_string                                            String?   @db.VarChar(60)
+  value_as_concept_id                                        Int?
+  qualifier_concept_id                                       Int?
+  unit_concept_id                                            Int?
+  provider_id                                                Int?
+  visit_occurrence_id                                        BigInt?
+  visit_detail_id                                            Int?
+  observation_source_value                                   String?   @db.VarChar(50)
+  observation_source_concept_id                              Int?
+  unit_source_value                                          String?   @db.VarChar(50)
+  qualifier_source_value                                     String?   @db.VarChar(50)
+  concept_observation_observation_concept_idToconcept        concept?  @relation("observation_observation_concept_idToconcept", fields: [observation_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_concept")
+  concept_observation_observation_source_concept_idToconcept concept?  @relation("observation_observation_source_concept_idToconcept", fields: [observation_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_concept_s")
+  provider                                                   provider? @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_provider")
+  concept_observation_qualifier_concept_idToconcept          concept?  @relation("observation_qualifier_concept_idToconcept", fields: [qualifier_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_qualifier")
+  concept_observation_observation_type_concept_idToconcept   concept?  @relation("observation_observation_type_concept_idToconcept", fields: [observation_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_type_concept")
+  concept_observation_unit_concept_idToconcept               concept?  @relation("observation_unit_concept_idToconcept", fields: [unit_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_unit")
+  concept_observation_value_as_concept_idToconcept           concept?  @relation("observation_value_as_concept_idToconcept", fields: [value_as_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_value")
+
+  @@index([observation_concept_id], map: "idx_observation_concept_id")
+  @@index([observation_date], map: "idx_observation_observation_date")
+  @@index([person_id], map: "idx_observation_person_id")
+  @@index([visit_occurrence_id], map: "idx_observation_visit_id")
 @@schema("cdm")
 }
 
 model observation_period {
-  observation_period_id         Int      @id(map: "xpk_observation_period")
-  person_id                     Int
-  observation_period_start_date DateTime @db.Date
-  observation_period_end_date   DateTime @db.Date
-  period_type_concept_id        Int
+  observation_period_id         BigInt    @id(map: "xpk_observation_period")
+  person_id                     BigInt?
+  observation_period_start_date DateTime? @db.Timestamp(6)
+  observation_period_end_date   DateTime? @db.Timestamp(6)
+  period_type_concept_id        Int?
+  concept                       concept?  @relation(fields: [period_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_observation_period_concept")
+
+  @@index([person_id], map: "idx_observation_period_id")
 @@schema("cdm")
 }
 
 model payer_plan_period {
-  payer_plan_period_id          Int      @id(map: "xpk_payer_plan_period")
-  person_id                     Int
-  payer_plan_period_start_date  DateTime @db.Date
-  payer_plan_period_end_date    DateTime @db.Date
+  payer_plan_period_id          BigInt    @id(map: "xpk_payer_plan_period")
+  person_id                     BigInt?
+  payer_plan_period_start_date  DateTime? @db.Timestamp(6)
+  payer_plan_period_end_date    DateTime? @db.Timestamp(6)
   payer_concept_id              Int?
-  payer_source_value            String?  @db.VarChar(50)
+  payer_source_value            String?   @db.VarChar(50)
   payer_source_concept_id       Int?
   plan_concept_id               Int?
-  plan_source_value             String?  @db.VarChar(50)
+  plan_source_value             String?   @db.VarChar(50)
   plan_source_concept_id        Int?
   sponsor_concept_id            Int?
-  sponsor_source_value          String?  @db.VarChar(50)
+  sponsor_source_value          String?   @db.VarChar(50)
   sponsor_source_concept_id     Int?
-  family_source_value           String?  @db.VarChar(50)
-  stop_reason_concept_id        Int?
-  stop_reason_source_value      String?  @db.VarChar(50)
+  family_source_value           String?   @db.VarChar(50)
+  stop_reason_source_value      Int?
   stop_reason_source_concept_id Int?
+  cost                          cost[]
+
+  @@index([person_id], map: "idx_period_person_id")
 @@schema("cdm")
 }
 
 model person {
-  person_id                   Int       @id(map: "xpk_person")
-  gender_concept_id           Int
-  year_of_birth               Int
-  month_of_birth              Int?
-  day_of_birth                Int?
-  birth_datetime              DateTime? @db.Timestamp(6)
-  race_concept_id             Int
-  ethnicity_concept_id        Int
-  location_id                 Int?
-  provider_id                 Int?
-  care_site_id                Int?
-  person_source_value         String?   @db.VarChar(50)
-  gender_source_value         String?   @db.VarChar(50)
-  gender_source_concept_id    Int?
-  race_source_value           String?   @db.VarChar(50)
-  race_source_concept_id      Int?
-  ethnicity_source_value      String?   @db.VarChar(50)
-  ethnicity_source_concept_id Int?
-
-  @@index([person_source_value], map: "person_psv")
+  person_id                                           BigInt            @id(map: "xpk_person") @unique(map: "idx_person_id")
+  race_concept_id                                     Int?
+  ethnicity_concept_id                                Int?
+  gender_concept_id                                   Int?
+  year_of_birth                                       Int?
+  month_of_birth                                      Int?
+  day_of_birth                                        Int?
+  birth_datetime                                      DateTime?         @db.Timestamp(6)
+  location_id                                         BigInt?
+  provider_id                                         Int?
+  care_site_id                                        Int?
+  person_source_value                                 String?
+  gender_source_value                                 String?
+  gender_source_concept_id                            Int?
+  race_source_value                                   String?
+  race_source_concept_id                              Int?
+  ethnicity_source_value                              String?
+  ethnicity_source_concept_id                         Int?
+  death                                               death?
+  device_exposure                                     device_exposure[]
+  dose_era                                            dose_era[]
+  note                                                note[]
+  care_site                                           care_site?        @relation(fields: [care_site_id], references: [care_site_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_care_site")
+  concept_person_ethnicity_concept_idToconcept        concept?          @relation("person_ethnicity_concept_idToconcept", fields: [ethnicity_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_ethnicity_concept")
+  concept_person_ethnicity_source_concept_idToconcept concept?          @relation("person_ethnicity_source_concept_idToconcept", fields: [ethnicity_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_ethnicity_concept_s")
+  concept_person_gender_concept_idToconcept           concept?          @relation("person_gender_concept_idToconcept", fields: [gender_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_gender_concept")
+  concept_person_gender_source_concept_idToconcept    concept?          @relation("person_gender_source_concept_idToconcept", fields: [gender_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_gender_concept_s")
+  location                                            location?         @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_location")
+  provider                                            provider?         @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_provider")
+  concept_person_race_concept_idToconcept             concept?          @relation("person_race_concept_idToconcept", fields: [race_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_race_concept")
+  concept_person_race_source_concept_idToconcept      concept?          @relation("person_race_source_concept_idToconcept", fields: [race_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_person_race_concept_s")
+  specimen                                            specimen[]
+  visit_detail                                        visit_detail[]
 @@schema("cdm")
 }
 
 model procedure_occurrence {
-  procedure_occurrence_id     Int       @id(map: "xpk_procedure_occurrence")
-  person_id                   Int
-  procedure_concept_id        Int
-  procedure_date              DateTime  @db.Date
-  procedure_datetime          DateTime? @db.Timestamp(6)
-  procedure_end_date          DateTime? @db.Date
-  procedure_end_datetime      DateTime? @db.Timestamp(6)
-  procedure_type_concept_id   Int
-  modifier_concept_id         Int?
-  quantity                    Int?
-  provider_id                 Int?
-  visit_occurrence_id         Int?
-  visit_detail_id             Int?
-  procedure_source_value      String?   @db.VarChar(50)
-  procedure_source_concept_id Int?
-  modifier_source_value       String?   @db.VarChar(50)
+  procedure_occurrence_id                                           BigInt    @id(map: "xpk_procedure_occurrence")
+  person_id                                                         BigInt?
+  procedure_concept_id                                              Int?
+  procedure_date                                                    DateTime? @db.Timestamp(6)
+  procedure_datetime                                                DateTime? @db.Timestamp(6)
+  procedure_type_concept_id                                         Int?
+  modifier_concept_id                                               Int?
+  quantity                                                          Int?
+  provider_id                                                       Int?
+  visit_occurrence_id                                               BigInt?
+  visit_detail_id                                                   Int?
+  procedure_source_value                                            String?   @db.VarChar(50)
+  procedure_source_concept_id                                       Int?
+  modifier_source_value                                             String?   @db.VarChar(50)
+  concept_procedure_occurrence_procedure_concept_idToconcept        concept?  @relation("procedure_occurrence_procedure_concept_idToconcept", fields: [procedure_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_procedure_concept")
+  concept_procedure_occurrence_procedure_source_concept_idToconcept concept?  @relation("procedure_occurrence_procedure_source_concept_idToconcept", fields: [procedure_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_procedure_concept_s")
+  concept_procedure_occurrence_modifier_concept_idToconcept         concept?  @relation("procedure_occurrence_modifier_concept_idToconcept", fields: [modifier_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_procedure_modifier")
+  provider                                                          provider? @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_procedure_provider")
+  concept_procedure_occurrence_procedure_type_concept_idToconcept   concept?  @relation("procedure_occurrence_procedure_type_concept_idToconcept", fields: [procedure_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_procedure_type_concept")
+
+  @@index([procedure_concept_id], map: "idx_procedure_concept_id")
+  @@index([procedure_date], map: "idx_procedure_occurrence_procedure_date")
+  @@index([person_id], map: "idx_procedure_person_id")
+  @@index([visit_occurrence_id], map: "idx_procedure_visit_id")
 @@schema("cdm")
 }
 
 model provider {
-  provider_id                 Int     @id(map: "xpk_provider")
-  provider_name               String? @db.VarChar(255)
-  npi                         String? @db.VarChar(20)
-  dea                         String? @db.VarChar(20)
-  specialty_concept_id        Int?
-  care_site_id                Int?
-  year_of_birth               Int?
-  gender_concept_id           Int?
-  provider_source_value       String? @db.VarChar(50)
-  specialty_source_value      String? @db.VarChar(50)
-  specialty_source_concept_id Int?
-  gender_source_value         String? @db.VarChar(50)
-  gender_source_concept_id    Int?
-
-  @@index([provider_source_value], map: "provider_psv")
+  provider_id                                           Int                    @id(map: "xpk_provider")
+  provider_name                                         String?                @db.VarChar(255)
+  npi                                                   String?                @db.VarChar(20)
+  dea                                                   String?                @db.VarChar(20)
+  specialty_concept_id                                  Int?
+  care_site_id                                          Int?
+  year_of_birth                                         Int?
+  gender_concept_id                                     Int?
+  provider_source_value                                 String?                @db.VarChar(50)
+  specialty_source_value                                String?                @db.VarChar(50)
+  specialty_source_concept_id                           Int?
+  gender_source_value                                   String?                @db.VarChar(50)
+  gender_source_concept_id                              Int?
+  condition_occurrence                                  condition_occurrence[]
+  device_exposure                                       device_exposure[]
+  drug_exposure                                         drug_exposure[]
+  measurement                                           measurement[]
+  note                                                  note[]
+  observation                                           observation[]
+  person                                                person[]
+  procedure_occurrence                                  procedure_occurrence[]
+  care_site                                             care_site?             @relation(fields: [care_site_id], references: [care_site_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_provider_care_site")
+  concept_provider_gender_concept_idToconcept           concept?               @relation("provider_gender_concept_idToconcept", fields: [gender_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_provider_gender")
+  concept_provider_gender_source_concept_idToconcept    concept?               @relation("provider_gender_source_concept_idToconcept", fields: [gender_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_provider_gender_s")
+  concept_provider_specialty_concept_idToconcept        concept?               @relation("provider_specialty_concept_idToconcept", fields: [specialty_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_provider_specialty")
+  concept_provider_specialty_source_concept_idToconcept concept?               @relation("provider_specialty_source_concept_idToconcept", fields: [specialty_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_provider_specialty_s")
+  visit_detail                                          visit_detail[]
+  visit_occurrence                                      visit_occurrence[]
 @@schema("cdm")
 }
 
 model relationship {
-  relationship_id         String @id(map: "xpk_relationship") @db.VarChar(20)
-  relationship_name       String @db.VarChar(255)
-  is_hierarchical         String @db.VarChar(1)
-  defines_ancestry        String @db.VarChar(1)
-  reverse_relationship_id String @db.VarChar(20)
+  relationship_id         String                 @id(map: "xpk_relationship") @unique(map: "idx_relationship_rel_id") @db.VarChar(20)
+  relationship_name       String                 @db.VarChar(255)
+  is_hierarchical         String                 @db.VarChar(1)
+  defines_ancestry        String                 @db.VarChar(1)
+  reverse_relationship_id String                 @db.VarChar(20)
   relationship_concept_id Int
+  concept_relationship    concept_relationship[]
+  concept                 concept                @relation(fields: [relationship_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_relationship_concept")
+  relationship            relationship           @relation("relationshipTorelationship", fields: [reverse_relationship_id], references: [relationship_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_relationship_reverse")
+  other_relationship      relationship[]         @relation("relationshipTorelationship")
 @@schema("cdm")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model source_to_concept_map {
-  source_code             String   @db.VarChar(50)
-  source_concept_id       Int
-  source_vocabulary_id    String   @db.VarChar(20)
-  source_code_description String?  @db.VarChar(255)
-  target_concept_id       Int
-  target_vocabulary_id    String   @db.VarChar(20)
-  valid_start_date        DateTime @db.Date
-  valid_end_date          DateTime @db.Date
-  invalid_reason          String?  @db.VarChar(1)
+  source_code                                              String      @db.VarChar(50)
+  source_concept_id                                        Int?
+  source_vocabulary_id                                     String      @db.VarChar(20)
+  source_code_description                                  String?     @db.VarChar(255)
+  target_concept_id                                        Int
+  target_vocabulary_id                                     String?     @db.VarChar(20)
+  valid_start_date                                         DateTime?   @db.Timestamp(6)
+  valid_end_date                                           DateTime    @db.Timestamp(6)
+  invalid_reason                                           String?     @db.VarChar(1)
+  concept_source_to_concept_map_source_concept_idToconcept concept?    @relation("source_to_concept_map_source_concept_idToconcept", fields: [source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_source_concept_id")
+  concept_source_to_concept_map_target_concept_idToconcept concept     @relation("source_to_concept_map_target_concept_idToconcept", fields: [target_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_source_to_concept_map_c_1")
+  vocabulary                                               vocabulary? @relation(fields: [target_vocabulary_id], references: [vocabulary_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_source_to_concept_map_v_2")
 
-  @@ignore
-@@schema("cdm")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model source_to_source_vocab_map {
-  source_code             String?   @db.VarChar(50)
-  source_concept_id       Int?
-  source_code_description String?   @db.VarChar(255)
-  source_vocabulary_id    String?   @db.VarChar(20)
-  source_domain_id        String?   @db.VarChar(20)
-  source_concept_class_id String?   @db.VarChar(20)
-  source_valid_start_date DateTime? @db.Date
-  source_valid_end_date   DateTime? @db.Date
-  source_invalid_reason   String?   @db.VarChar(1)
-  target_concept_id       Int?
-  target_concept_name     String?   @db.VarChar(255)
-  target_vocabulary_id    String?   @db.VarChar(20)
-  target_domain_id        String?   @db.VarChar(20)
-  target_concept_class_id String?   @db.VarChar(20)
-  target_invalid_reason   String?   @db.VarChar(1)
-  target_standard_concept String?   @db.VarChar(1)
-
-  @@index([source_code], map: "idx_source_vocab_map_source_code")
-  @@index([source_vocabulary_id], map: "idx_source_vocab_map_source_vocab_id")
-  @@index([source_code, source_vocabulary_id, source_domain_id], map: "source_to_source_vocab_map_scsvisdi")
-  @@ignore
-@@schema("cdm")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model source_to_standard_vocab_map {
-  source_code             String?   @db.VarChar(50)
-  source_concept_id       Int?
-  source_code_description String?   @db.VarChar(255)
-  source_vocabulary_id    String?   @db.VarChar(20)
-  source_domain_id        String?   @db.VarChar(20)
-  source_concept_class_id String?   @db.VarChar(20)
-  source_valid_start_date DateTime? @db.Date
-  source_valid_end_date   DateTime? @db.Date
-  source_invalid_reason   String?   @db.VarChar(1)
-  target_concept_id       Int?
-  target_concept_name     String?   @db.VarChar(255)
-  target_vocabulary_id    String?   @db.VarChar(20)
-  target_domain_id        String?   @db.VarChar(20)
-  target_concept_class_id String?   @db.VarChar(20)
-  target_invalid_reason   String?   @db.VarChar(1)
-  target_standard_concept String?   @db.VarChar(1)
-
-  @@index([source_code], map: "idx_vocab_map_source_code")
-  @@index([source_vocabulary_id], map: "idx_vocab_map_source_vocab_id")
-  @@index([source_code, source_vocabulary_id, source_domain_id], map: "source_to_standard_vocab_map_scsvsd")
-  @@index([source_code, target_domain_id, target_vocabulary_id, source_vocabulary_id, target_standard_concept, target_invalid_reason], map: "source_to_standard_vocab_map_sctditvisvitsctir")
-  @@ignore
+  @@id([source_vocabulary_id, target_concept_id, source_code, valid_end_date], map: "xpk_source_to_concept_map")
+  @@index([source_code], map: "idx_source_to_concept_map_code")
+  @@index([source_vocabulary_id], map: "idx_source_to_concept_map_id_1")
+  @@index([target_vocabulary_id], map: "idx_source_to_concept_map_id_2")
+  @@index([target_concept_id], map: "idx_source_to_concept_map_id_3")
 @@schema("cdm")
 }
 
 model specimen {
-  specimen_id                 Int       @id(map: "xpk_specimen")
-  person_id                   Int
-  specimen_concept_id         Int
-  specimen_type_concept_id    Int
-  specimen_date               DateTime  @db.Date
-  specimen_datetime           DateTime? @db.Timestamp(6)
-  quantity                    Decimal?  @db.Decimal
-  unit_concept_id             Int?
-  anatomic_site_concept_id    Int?
-  disease_status_concept_id   Int?
-  specimen_source_id          String?   @db.VarChar(50)
-  specimen_source_value       String?   @db.VarChar(50)
-  unit_source_value           String?   @db.VarChar(50)
-  anatomic_site_source_value  String?   @db.VarChar(50)
-  disease_status_source_value String?   @db.VarChar(50)
-@@schema("cdm")
-}
+  specimen_id                                         BigInt    @id(map: "xpk_specimen")
+  person_id                                           BigInt?
+  specimen_concept_id                                 Int?
+  specimen_type_concept_id                            Int?
+  specimen_date                                       DateTime? @db.Timestamp(6)
+  specimen_datetime                                   DateTime? @db.Timestamp(6)
+  quantity                                            Decimal?  @db.Decimal
+  unit_concept_id                                     Int?
+  anatomic_site_concept_id                            Int?
+  disease_status_concept_id                           Int?
+  specimen_source_id                                  String?   @db.VarChar(50)
+  specimen_source_value                               String?   @db.VarChar(50)
+  unit_source_value                                   String?   @db.VarChar(50)
+  anatomic_site_source_value                          String?   @db.VarChar(50)
+  disease_status_source_value                         String?   @db.VarChar(50)
+  concept_specimen_specimen_concept_idToconcept       concept?  @relation("specimen_specimen_concept_idToconcept", fields: [specimen_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_specimen_concept")
+  person                                              person?   @relation(fields: [person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_specimen_person")
+  concept_specimen_anatomic_site_concept_idToconcept  concept?  @relation("specimen_anatomic_site_concept_idToconcept", fields: [anatomic_site_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_specimen_site_concept")
+  concept_specimen_disease_status_concept_idToconcept concept?  @relation("specimen_disease_status_concept_idToconcept", fields: [disease_status_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_specimen_status_concept")
+  concept_specimen_specimen_type_concept_idToconcept  concept?  @relation("specimen_specimen_type_concept_idToconcept", fields: [specimen_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_specimen_type_concept")
+  concept_specimen_unit_concept_idToconcept           concept?  @relation("specimen_unit_concept_idToconcept", fields: [unit_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_specimen_unit_concept")
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model states_map {
-  state              String? @db.VarChar(50)
-  state_abbreviation String? @db.VarChar(2)
-
-  @@ignore
+  @@index([specimen_concept_id], map: "idx_specimen_concept_id")
+  @@index([person_id], map: "idx_specimen_person_id")
 @@schema("cdm")
 }
 
 model visit_detail {
-  visit_detail_id                Int       @id(map: "xpk_visit_detail")
-  person_id                      Int
-  visit_detail_concept_id        Int
-  visit_detail_start_date        DateTime  @db.Date
-  visit_detail_start_datetime    DateTime? @db.Timestamp(6)
-  visit_detail_end_date          DateTime  @db.Date
-  visit_detail_end_datetime      DateTime? @db.Timestamp(6)
-  visit_detail_type_concept_id   Int
-  provider_id                    Int?
-  care_site_id                   Int?
-  visit_detail_source_value      String?   @db.VarChar(50)
-  visit_detail_source_concept_id Int?
-  admitted_from_concept_id       Int?
-  admitted_from_source_value     String?   @db.VarChar(50)
-  discharged_to_source_value     String?   @db.VarChar(50)
-  discharged_to_concept_id       Int?
-  preceding_visit_detail_id      Int?
-  parent_visit_detail_id         Int?
-  visit_occurrence_id            Int
+  visit_detail_id                                                         Int            @id(map: "xpk_visit_detail")
+  person_id                                                               BigInt
+  visit_detail_concept_id                                                 Int
+  visit_detail_start_date                                                 DateTime       @db.Timestamp(6)
+  visit_detail_start_datetime                                             DateTime?      @db.Timestamp(6)
+  visit_detail_end_date                                                   DateTime       @db.Timestamp(6)
+  visit_detail_end_datetime                                               DateTime?      @db.Timestamp(6)
+  visit_detail_type_concept_id                                            Int
+  provider_id                                                             Int?
+  care_site_id                                                            Int?
+  admitting_source_concept_id                                             Int?
+  discharge_to_concept_id                                                 Int?
+  preceding_visit_detail_id                                               Int?
+  visit_detail_source_value                                               String?        @db.VarChar(50)
+  visit_detail_source_concept_id                                          Int?
+  admitting_source_value                                                  String?        @db.VarChar(50)
+  discharge_to_source_value                                               String?        @db.VarChar(50)
+  visit_detail_parent_id                                                  Int?
+  visit_occurrence_id                                                     Int
+  concept_visit_detail_admitting_source_concept_idToconcept               concept?       @relation("visit_detail_admitting_source_concept_idToconcept", fields: [admitting_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_admitting_s")
+  care_site                                                               care_site?     @relation(fields: [care_site_id], references: [care_site_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_care_site")
+  concept_visit_detail_visit_detail_source_concept_idToconcept            concept?       @relation("visit_detail_visit_detail_source_concept_idToconcept", fields: [visit_detail_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_concept_s")
+  concept_visit_detail_discharge_to_concept_idToconcept                   concept?       @relation("visit_detail_discharge_to_concept_idToconcept", fields: [discharge_to_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_discharge")
+  visit_detail_visit_detail_visit_detail_parent_idTovisit_detail          visit_detail?  @relation("visit_detail_visit_detail_parent_idTovisit_detail", fields: [visit_detail_parent_id], references: [visit_detail_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_parent")
+  other_visit_detail_visit_detail_visit_detail_parent_idTovisit_detail    visit_detail[] @relation("visit_detail_visit_detail_parent_idTovisit_detail")
+  person                                                                  person         @relation(fields: [person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_person")
+  visit_detail_visit_detail_preceding_visit_detail_idTovisit_detail       visit_detail?  @relation("visit_detail_preceding_visit_detail_idTovisit_detail", fields: [preceding_visit_detail_id], references: [visit_detail_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_preceding")
+  other_visit_detail_visit_detail_preceding_visit_detail_idTovisit_detail visit_detail[] @relation("visit_detail_preceding_visit_detail_idTovisit_detail")
+  provider                                                                provider?      @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_provider")
+  concept_visit_detail_visit_detail_type_concept_idToconcept              concept        @relation("visit_detail_visit_detail_type_concept_idToconcept", fields: [visit_detail_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_v_detail_type_concept")
+
+  @@index([visit_detail_concept_id], map: "idx_visit_detail_concept_id")
+  @@index([person_id], map: "idx_visit_detail_person_id")
 @@schema("cdm")
 }
 
 model visit_occurrence {
-  visit_occurrence_id           Int       @id(map: "xpk_visit_occurrence")
-  person_id                     Int
-  visit_concept_id              Int
-  visit_start_date              DateTime  @db.Date
-  visit_start_datetime          DateTime? @db.Timestamp(6)
-  visit_end_date                DateTime  @db.Date
-  visit_end_datetime            DateTime? @db.Timestamp(6)
-  visit_type_concept_id         Int
-  provider_id                   Int?
-  care_site_id                  Int?
-  visit_source_value            String?   @db.VarChar(50)
-  visit_source_concept_id       Int?
-  admitted_from_concept_id      Int?
-  admitted_from_source_value    String?   @db.VarChar(50)
-  discharged_to_concept_id      Int?
-  discharged_to_source_value    String?   @db.VarChar(50)
-  preceding_visit_occurrence_id Int?
+  visit_occurrence_id                                           BigInt     @id(map: "xpk_visit_occurrence")
+  person_id                                                     BigInt?
+  visit_concept_id                                              Int?
+  visit_start_date                                              DateTime?  @db.Timestamp(6)
+  visit_start_datetime                                          DateTime?  @db.Timestamp(6)
+  visit_end_date                                                DateTime?  @db.Timestamp(6)
+  visit_end_datetime                                            DateTime?  @db.Timestamp(6)
+  visit_type_concept_id                                         Int?
+  provider_id                                                   Int?
+  care_site_id                                                  Int?
+  visit_source_value                                            String?    @db.VarChar(50)
+  visit_source_concept_id                                       Int?
+  admitting_source_concept_id                                   Int?
+  admitting_source_value                                        String?    @db.VarChar(50)
+  discharge_to_concept_id                                       Int?
+  discharge_to_source_value                                     String?    @db.VarChar(50)
+  preceding_visit_occurrence_id                                 Int?
+  concept_visit_occurrence_admitting_source_concept_idToconcept concept?   @relation("visit_occurrence_admitting_source_concept_idToconcept", fields: [admitting_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_admitting_s")
+  care_site                                                     care_site? @relation(fields: [care_site_id], references: [care_site_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_care_site")
+  concept_visit_occurrence_visit_source_concept_idToconcept     concept?   @relation("visit_occurrence_visit_source_concept_idToconcept", fields: [visit_source_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_concept_s")
+  concept_visit_occurrence_discharge_to_concept_idToconcept     concept?   @relation("visit_occurrence_discharge_to_concept_idToconcept", fields: [discharge_to_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_discharge")
+  provider                                                      provider?  @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_provider")
+  concept_visit_occurrence_visit_type_concept_idToconcept       concept?   @relation("visit_occurrence_visit_type_concept_idToconcept", fields: [visit_type_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_visit_type_concept")
+
+  @@index([visit_concept_id], map: "idx_visit_concept_id")
+  @@index([visit_start_date], map: "idx_visit_occurrence_start_date")
+  @@index([person_id], map: "idx_visit_person_id")
 @@schema("cdm")
 }
 
 model vocabulary {
-  vocabulary_id         String  @id(map: "xpk_vocabulary") @db.VarChar(20)
-  vocabulary_name       String  @db.VarChar(255)
-  vocabulary_reference  String? @db.VarChar(255)
-  vocabulary_version    String? @db.VarChar(255)
-  vocabulary_concept_id Int
+  vocabulary_id                                     String                  @id(map: "xpk_vocabulary") @unique(map: "idx_vocabulary_vocabulary_id") @db.VarChar(20)
+  vocabulary_name                                   String                  @db.VarChar(255)
+  vocabulary_reference                              String                  @db.VarChar(255)
+  vocabulary_version                                String?                 @db.VarChar(255)
+  vocabulary_concept_id                             Int
+  concept_concept_vocabulary_idTovocabulary         concept[]               @relation("concept_vocabulary_idTovocabulary")
+  source_to_concept_map                             source_to_concept_map[]
+  concept_vocabulary_vocabulary_concept_idToconcept concept                 @relation("vocabulary_vocabulary_concept_idToconcept", fields: [vocabulary_concept_id], references: [concept_id], onDelete: NoAction, onUpdate: NoAction, map: "fpk_vocabulary_concept")
 @@schema("cdm")
 }
