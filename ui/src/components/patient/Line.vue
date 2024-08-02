@@ -22,9 +22,19 @@ use([
   CanvasRenderer,
 ]);
 
-const { dateRange, chartData, title, label } = defineProps({
+/*
+This comoponent expect the data to be in the following format:
+{
+  dateRange: [date1, date2, ...],
+  dataRange: [data1, data2, ...],
+  title: "Title",
+  label: "Label",
+}
+*/
+
+const { dateRange, dataRange, title, label } = defineProps({
   dateRange: Array,
-  chartData: Array,
+  dataRange: Array,
   title: String,
   label: String,
 });
@@ -35,11 +45,11 @@ const { dateRange, chartData, title, label } = defineProps({
 //   Math.max(...chartData),
 // ]);
 
-const dates = computed(() =>
-  dateRange.map((d) => new Date(d).toLocaleDateString()),
-);
+const dates = computed(() => {
+  return dateRange.map((date) => new Date(date).toLocaleDateString());
+});
 
-const data = chartData;
+const data = dataRange;
 
 const chartOptions = ref({
   tooltip: {
@@ -69,12 +79,12 @@ const chartOptions = ref({
   ],
 });
 
-if (chartData.length > 100) {
+if (dataRange && dataRange.length > 10) {
   chartOptions.value.dataZoom = [
     {
       type: "inside",
-      start: 0,
-      end: 10,
+      start: 65,
+      end: 100,
     },
     {
       start: 0,
@@ -86,15 +96,15 @@ if (chartData.length > 100) {
 
 <template>
   <div
-    v-if="parseInt(chartData[0]) !== NaN || chartData[0] !== null"
+    v-if="parseInt(dataRange[0]) !== NaN || dataRange[0] !== null"
     class="h-48"
   >
-    <div v-if="chartData.length === 1 && parseInt(chartData[0]) !== NaN">
+    <div v-if="dataRange.length === 1 && parseInt(dataRange[0]) !== NaN">
       <p class="text-center text-2xl font-bold">{{ title }}</p>
       <p class="text-center text-2xl">
-        {{ chartData[0] }} <b>{{ label }}</b>
+        {{ dataRange[0] }} <b>{{ label }}</b>
       </p>
-      <p class="text-center">{{ dates[0] }}</p>
+      <p class="text-center">{{ new Date(dates[0]).toLocaleDateString() }}</p>
     </div>
     <div v-else class="h-48">
       <p class="text-center text-2xl font-bold">{{ title }}</p>

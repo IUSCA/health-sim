@@ -21,7 +21,7 @@ fi
 
 
 echo "Generating data..."
-java -jar synthea-with-dependencies.jar --exporter.fhir_stu3.export true --exporter.fhir.transaction_bundle true --exporter.practitioner.fhir_stu3.export true --exporter.hospital.fhir_stu3.export true --exporter.years_of_history 30 -s $SYNTHEA_SEED -p 120 -r $SYNTHEA_DATE
+java -jar synthea-with-dependencies.jar --exporter.fhir_stu3.export true --exporter.fhir.transaction_bundle true --exporter.practitioner.fhir_stu3.export true --exporter.hospital.fhir_stu3.export true -s $SYNTHEA_SEED -p $SYNTHEA_SIZE -r $SYNTHEA_DATE
 
 
 echo "Uploading data to FHIR server..."

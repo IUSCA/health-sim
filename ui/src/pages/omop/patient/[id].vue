@@ -1,5 +1,6 @@
 <script setup>
-import Overview from "@/components/patient/Overview.vue";
+import Line from "@/components/patient/Line.vue";
+import Timeline from "@/components/patient/Timeline.vue";
 import omopService from "@/services/omop";
 import { useNavStore } from "@/stores/nav";
 
@@ -19,16 +20,35 @@ nav.setNavItems([
 ]);
 
 const details = ref({});
-const vitals = ref({});
-const overview = ref({});
+const data = ref({});
+
+const category = ref("Overview");
+const categories = ref([
+  "Overview",
+  "Medications",
+  "Procedures",
+  "Vitals",
+  "Conditions",
+]);
+
+const views = ref(["Graph", "Data"]);
+const view = ref("Graph");
+
+const getData = async () => {
+  data.value = {};
+
+  data.value = (
+    await omopService.getCategoryDetails({ id, category: category.value })
+  ).data;
+  console.log(data.value);
+};
 
 onMounted(async () => {
   try {
     const detailData = (await omopService.getDetails(id)).data;
     details.value = detailData;
 
-    overview.value = (await omopService.getOverview(id)).data;
-    console.log(overview.value);
+    await getData();
   } catch (err) {
     console.error(err);
   }
@@ -49,12 +69,13 @@ const capitalizeFirstLetter = (string) => {
   return firstLetter.toUpperCase();
 };
 
-const dateRange = ref([55, 100]);
-const category = ref("Overview");
-const categories = ref(["Overview", "Vitals", "Conditions", "Medications"]);
-
-const views = ref(["Graph", "Data"]);
-const view = ref("Graph");
+watch(
+  () => category.value,
+  () => {
+    getData();
+  },
+  { deep: true },
+);
 </script>
 
 <template>
@@ -104,31 +125,31 @@ const view = ref("Graph");
       </div>
     </div>
 
-    <div v-if="category === 'Overview'">
-      <Overview :overview="overview" :birth-date="details.birth_datetime" />
+    <div v-if="category === 'Overview' || category === 'Medications'">
+      <Timeline
+        :overview="data"
+        :birth-date="details.birth_datetime"
+        v-if="Object.keys(data).length > 0"
+      />
+      <VaInnerLoading loading :size="60" v-else />
     </div>
     <div v-else>
-      <p class="text-center font-bold mb-2">
-        {{ new Date(details.birth_datetime).toLocaleDateString() }} -
-        {{ new Date(Date.now()).toLocaleDateString() }}
-      </p>
-      <div class="w-full mb-4">
-        <VaSlider v-model="dateRange" range :track-label="processTrackLabel" />
-      </div>
-      <div class="grid grid-cols-3">
-        <div v-for="vital in Object.keys(vitals)" :key="vital">
+      <div class="grid grid-cols-3" v-if="Object.keys(data).length > 0">
+        <div v-for="chart in Object.keys(data)" :key="chart">
           <VaCard class="m-2">
             <VaCardContent>
-              <Vitals
-                :title="vital"
-                :date-range="vitals[vital].date"
-                :chart-data="vitals[vital].value"
-                :label="vitals[vital].unit"
+              <Line
+                :title="chart"
+                :date-range="data[chart].date"
+                :data-range="data[chart].value"
+                :label="data[chart].unit"
               />
             </VaCardContent>
           </VaCard>
         </div>
-        <!-- <DateLine /> -->
+      </div>
+      <div v-else class="mt-12">
+        <VaInnerLoading loading :size="60" />
       </div>
     </div>
   </div>

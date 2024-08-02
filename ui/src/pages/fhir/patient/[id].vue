@@ -3,6 +3,7 @@ import { stringToRGB } from "@/services/colors";
 import fhirService from "@/services/fhir";
 import { useNavStore } from "@/stores/nav";
 
+import Timeline from "@/components/patient/Timeline.vue";
 import { initials } from "@/services/utils";
 
 const nav = useNavStore();
@@ -21,19 +22,29 @@ nav.setNavItems([
 ]);
 
 const details = ref({});
-const vitals = ref({});
-const overview = ref({});
+const data = ref({});
+
+const getData = async () => {
+  data.value = {};
+  if (category.value === "Overview") {
+    data.value = (await fhirService.getOverview(id)).data;
+  } else {
+    data.value = (
+      await fhirService.getCategoryDetails({
+        id,
+
+        category: category.value,
+      })
+    ).data;
+  }
+};
 
 onMounted(async () => {
   try {
     const detailData = (await fhirService.getDetails({ id })).data;
     details.value = parseDetails(detailData);
 
-    vitals.value = (
-      await fhirService.getCategoryDetails({ id, resourceType: "Vitals" })
-    ).data;
-
-    overview.value = (await fhirService.getOverview(id)).data;
+    await getData();
   } catch (err) {
     console.error(err);
   }
@@ -57,7 +68,7 @@ const age = computed(() => {
 
 const capitalizeFirstLetter = (string) => {
   if (string === undefined) return "";
-  console.log(string);
+  // console.log(string);
   const firstLetter = string.length > 0 ? string[0] : "";
   return firstLetter.toUpperCase();
 };
@@ -68,6 +79,14 @@ const categories = ref(["Overview", "Vitals", "Conditions", "Medications"]);
 
 const views = ref(["Graph", "Data"]);
 const view = ref("Graph");
+
+watch(
+  () => category.value,
+  () => {
+    getData();
+  },
+  { deep: true },
+);
 </script>
 
 <template>
@@ -89,17 +108,21 @@ const view = ref("Graph");
           <h1 class="text-xl font-bold">
             {{ details.name }} ({{ capitalizeFirstLetter(details.gender) }})
           </h1>
-          <h2 class="text-base">Age: {{ age }} ({{ details.birthDate }})</h2>
+          <h2 class="text-base">
+            Age: {{ age }} ({{
+              new Date(details.birthDate).toLocaleDateString()
+            }})
+          </h2>
         </div>
       </div>
 
-      <div v-if="details.address">
-        <h2 class="text-lg font-bold">Address</h2>
-        <p>{{ details.address }}</p>
+      <div v-if="details.race">
+        <h2 class="text-lg font-bold">Race</h2>
+        <p>{{ details.race }}</p>
       </div>
-      <div v-if="details.telecom">
-        <h2 class="text-lg font-bold">Telecom</h2>
-        <p>{{ details.telecom }}</p>
+      <div v-if="details.ethnicity">
+        <h2 class="text-lg font-bold">Ethnicity</h2>
+        <p>{{ details.ethnicity }}</p>
       </div>
     </div>
     <VaDivider orientation="center" class="mt-6"> </VaDivider>
@@ -122,7 +145,12 @@ const view = ref("Graph");
     </div>
 
     <div v-if="category === 'Overview'">
-      <Overview :overview="overview" :birthDate="details.birthDate" />
+      <Timeline
+        :overview="data"
+        :birthDate="details.birthDate"
+        v-if="Object.keys(data).length > 0"
+      />
+      <VaInnerLoading loading :size="60" v-else />
     </div>
     <div v-else>
       <p class="text-center font-bold mb-2">
@@ -133,14 +161,14 @@ const view = ref("Graph");
         <VaSlider v-model="dateRange" range :track-label="processTrackLabel" />
       </div>
       <div class="grid grid-cols-3">
-        <div v-for="vital in Object.keys(vitals)" :key="vital">
+        <div v-for="chart in Object.keys(data)" :key="chart">
           <VaCard class="m-2">
             <VaCardContent>
-              <Vitals
-                :title="vital"
-                :date-range="vitals[vital].date"
-                :chart-data="vitals[vital].value"
-                :label="vitals[vital].unit"
+              <Line
+                :title="chart"
+                :date-range="data[chart].date"
+                :data-range="data[chart].value"
+                :label="data[chart].unit"
               />
             </VaCardContent>
           </VaCard>

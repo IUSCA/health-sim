@@ -28,6 +28,8 @@ const mapData = {
       telecom: 'Patient.telecom.where(system = \'phone\').value',
       gender: 'Patient.gender',
       birthDate: 'Patient.birthDate',
+      race: 'Patient.extension.where(url = \'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\').extension.where(url = \'ombCategory\').valueCoding.display',
+      ethnicity: 'Patient.extension.where(url = \'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\').extension.where(url = \'ombCategory\').valueCoding.display',
     },
   },
   Notes: {
@@ -139,42 +141,6 @@ router.get('/patients/:id/overview', isPermittedTo('read'), asyncHandler(async (
     diagnostics: results[3].entry
   }
 
-  // entry = [
-  // {
-  //   "fullUrl": "http://localhost:8080/baseDstu3/Condition/125",
-  //   "resource": {
-  //     "resourceType": "Condition",
-  //     "id": "125",
-  //     "meta": {
-  //       "versionId": "1",
-  //       "lastUpdated": "2024-07-02T16:05:47.259+00:00"
-  //     },
-  //     "clinicalStatus": "resolved",
-  //     "verificationStatus": "confirmed",
-  //     "code": {
-  //       "coding": [
-  //         {
-  //           "system": "http://snomed.info/sct",
-  //           "code": "233678006",
-  //           "display": "Childhood asthma"
-  //         }
-  //       ],
-  //       "text": "Childhood asthma"
-  //     },
-  //     "subject": {
-  //       "reference": "Patient/103"
-  //     },
-  //     "context": {
-  //       "reference": "Encounter/124"
-  //     },
-  //     "onsetDateTime": "2008-03-25T01:14:59+00:00",
-  //     "abatementDateTime": "2024-01-01T01:14:59+00:00",
-  //     "assertedDate": "2008-03-25T01:14:59+00:00"
-  //   },
-  //   "search": {
-  //     "mode": "match"
-  //   }
-  // }]
 
   let data = {}
 
@@ -256,10 +222,85 @@ router.post('/patients/:id/:resourceType/', isPermittedTo('read'), asyncHandler(
 
   if(resourceType === 'Vitals') {
     data = processVitals(data.data)
+  } else if(resourceType === 'Labs') {
+    data = create_lab_data(labCategories, data.data)
+  } else if(resourceType === 'Diagnostics') {
+    data = data.data.map((entry) => getFieldsForEntry(entry, 'Diagnostics', Object.keys(mapData['Diagnostics'].fields)))
   }
 
   res.json(data);
 }));
+
+router.post('/patients', isPermittedTo('read'), asyncHandler(async (req, res, next) => {
+
+  const { options, resourceType } = req.body;
+
+  const client = getClient(req, res);
+  let requestURL = `/Patient?_count=10000`;
+
+  const results = await client.request(requestURL);
+
+  const fhir_data = results.entry.map((entry) => getFieldsForEntry(entry, 'Patients', Object.keys(mapData[resourceType].fields)));
+
+  const data = normalizeFhirData(fhir_data)
+
+  // sort the data by the options
+  if(options.sortBy === 'age') {
+    data.sort((a, b) => {
+      if(options.sortingOrder === 'asc') {
+        console.log('a', new Date(a.birthDate), 'b', new Date(b.birthDate))
+        return new Date(a.birthDate) > new Date(b.birthDate) ? 1 : -1
+      }
+      return new Date(a.birthDate) < new Date(b.birthDate) ? 1 : -1
+    })
+  } else if(options.sortBy !== 'NONE') {
+    data.sort((a, b) => {
+      if(options.sortingOrder === 'asc') {
+        return a[options.sortBy] > b[options.sortBy] ? 1 : -1
+      } else {
+        return a[options.sortBy] < b[options.sortBy] ? 1 : -1
+      }
+    })
+  }  
+
+
+  console.log(data)
+
+  res.json({data, total: data.length});
+  
+
+
+
+
+}));
+
+// [
+// {
+//   id: [ '115' ],
+//   name: [ 'Alphonse92 Berge125' ],
+//   address: [ '400 Maggio Mission, Lynn, Massachusetts 01940' ],
+//   telecom: [ '555-548-3442' ],
+//   gender: [ 'male' ],
+//   birthDate: [ '1916-05-03' ],
+//   race: [ 'White' ],
+//   ethnicity: [ 'Not Hispanic or Latino' ]
+// },
+// ]
+const normalizeFhirData = (data) => {
+
+  let normalizedData = []
+
+  for(let entry of data) {
+    let normalizedEntry = {}
+    for(const field in entry) {
+      normalizedEntry[field] = entry[field][0] ? entry[field][0] : ''
+    }
+    normalizedData.push(normalizedEntry)
+  }
+
+  return normalizedData
+
+}
 
 // Search for a particular resource
 router.post(
@@ -271,10 +312,10 @@ router.post(
     const { resourceType, fields, options } = req.body;
 
 
-    const { count, sort, getpagesoffset } = processOptions(options);
+    const { count,  getpagesoffset, sort } = processOptions(options);
 
     // Add count to FHIR URL
-    let requestURL = `/${mapData[resourceType].resourceType}?_count=${count}&_getpagesoffset=${getpagesoffset}`;
+    let requestURL = `/${mapData[resourceType].resourceType}?_count=${count}&_getpagesoffset=${getpagesoffset}${sort}`;
 
     // Create a fuzzy search string
     let search = '';
@@ -295,7 +336,7 @@ router.post(
     requestURL += '&_include=DiagnosticReport:subject';
    }
 
-    requestURL += sort;
+
     requestURL += search;
 
     console.log(`Request URL: ${requestURL}`)
@@ -380,6 +421,7 @@ const process_data = (results, resourceType) => {
 
 
 
+
   return {
     data: data,
     total: results.total,
@@ -460,8 +502,6 @@ const processVitals = (data) => {
 
 
   let vitals = {}
-
-
 
 
   for(let entry of data){

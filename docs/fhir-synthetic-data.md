@@ -1,5 +1,5 @@
 # Creating synthetic FHIR Data
-
+ 
 For synthetic data creation we use synthea: https://github.com/synthetichealth/synthea which we load into our HAPI fhir server (https://hub.docker.com/r/conceptant/hapi-fhir/) using a bash script.
 
 
@@ -22,8 +22,8 @@ Then get a bash shell running for your synthea container:
 ```bash
 docker compose exec synthea bash
 ```
-
-Finally generate the synthetic data using the command from the Dockerfile as below:
+ 
+Finally generate the synthetic data using the command from the Dockerfile as below=
 
 ```bash
 ./fhir_import.sh
@@ -35,3 +35,5 @@ You can change any of the environment variables to a different seed, size, or da
 ## HAPI Fhir Server
 
 You can access the web ui for the HAPI fhir server at: http://localhost:8080/
+
+
