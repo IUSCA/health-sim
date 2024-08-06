@@ -93,3 +93,59 @@ onst normalizeFhirData = (data) => {
 
 This will work for multiple entries.  
 
+
+## Advanced Fetching from FHIR
+
+Many of the advanced features that fhir supports must be implemented within it's URL to call the data.  
+
+### Sorting
+
+Sorting using fhir is possible, but limited. Sorting will only work on values that are a number or a string.  Dates or other types will not sort.  Also sorting only works on fields with an upper level name, but not a deeply nested one. 
+
+For instance this will not be sortable:
+
+```javascript
+Patient.name.given.first()
+```
+
+But this will:
+
+```javascript
+Patient.gender
+```
+
+The values that do work will be referenced in the URL just as its name:
+
+```javascript
+let url = '/Patients&_sort=gender'
+```
+
+This will sort the results in descending order.  To do ascending order you will feed it the same information but with a -
+
+```javascript
+let url = '/Patients&_sort=-gender'
+```
+
+### Pagination
+
+To paginate you feed it the _getpagesoffset and _count values where the count is equal to the number you take and _getpagesoffset is the number of results that you skip.
+
+```javascript
+let url = `/Patients&_getpagesoffset=100&_count=10`
+```
+
+### Filter
+
+To filter a particular field you can do use the following pattern:
+
+```javascript
+&name:contains=Mou
+```
+
+The field follows the same limitations sort particular fields does so: it must be a top level keyword and can only be a string or number.  
+
+Here is a full example:
+
+```javascript
+let url = `/Patients&name:contains=Mou`
+```
