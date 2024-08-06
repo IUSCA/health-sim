@@ -32,7 +32,6 @@ const getData = async () => {
     data.value = (
       await fhirService.getCategoryDetails({
         id,
-
         category: category.value,
       })
     ).data;
@@ -75,7 +74,13 @@ const capitalizeFirstLetter = (string) => {
 
 const dateRange = ref([55, 100]);
 const category = ref("Overview");
-const categories = ref(["Overview", "Vitals", "Conditions", "Medications"]);
+const categories = ref([
+  "Overview",
+  "Vitals",
+  "Conditions",
+  "Procedure",
+  "Medications",
+]);
 
 const views = ref(["Graph", "Data"]);
 const view = ref("Graph");

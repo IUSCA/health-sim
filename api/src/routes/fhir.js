@@ -83,6 +83,16 @@ const mapData = {
 
     },
   },
+  Observations: {
+    resourceType: 'Observation',
+    fields: {
+      id: 'Observation.id',
+      type: 'Observation.code.text',
+      value: 'Observation.valueQuantity.value',
+      unit: 'Observation.valueQuantity.unit',
+      date: 'Observation.effectiveDateTime',
+    },
+  }
 };
 
 const labCategories = {
@@ -302,6 +312,66 @@ const normalizeFhirData = (data) => {
 
 }
 
+router.get('/patients/:id/:resourceType/details', isPermittedTo('read'), asyncHandler(async (req, res, next) => {
+
+  const { id, resourceType } = req.params;
+  const client = getClient(req, res);
+
+  let requestURL = `/${mapData[resourceType]['resourceType']}?patient=${id}`;
+  const results = await client.request(requestURL);
+
+  let data = {}
+
+
+  for(let entry of results.entry){
+
+
+    let { type, value, unit, date } = entry.resource
+
+    console.log('entry', JSON.stringify(entry))
+
+    switch(resourceType) {
+      case 'Observations':
+        type = entry.resource.category[0].coding[0].display
+        value = entry.resource.valueQuantity.value ? entry.resource.valueQuantity.value : ''
+        unit = entry.resource.valueQuantity.unit ? entry.resource.valueQuantity.unit : '' 
+        date = entry.resource.effectiveDateTime
+
+        break;
+      case 'Labs':
+        type = entry.resource.code.coding[0].display
+        value = entry.resource.valueQuantity.value
+        unit = entry.resource.valueQuantity.unit
+        date = entry.resource.effectiveDateTime
+
+        break;
+
+      
+    }
+
+
+
+    if(type in data) {
+      console.log("ENTRY", data[type])
+      data[type]['date'].push(date)
+      data[type]['value'].push(value)
+    } else {
+      console.log("FIRST ENTRY", type)
+      data[type] = {
+        type: type,
+        value: [value],
+        unit: unit,
+        date: [date]
+      }
+    }
+  }
+
+
+
+  res.json(data);
+
+}))
+
 // Search for a particular resource
 router.post(
   '/search',
@@ -310,8 +380,6 @@ router.post(
     const client = getClient(req, res);
 
     const { resourceType, fields, options } = req.body;
-
-
     const { count,  getpagesoffset, sort } = processOptions(options);
 
     // Add count to FHIR URL
