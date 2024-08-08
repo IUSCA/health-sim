@@ -149,3 +149,11 @@ Here is a full example:
 ```javascript
 let url = `/Patients&name:contains=Mou`
 ```
+
+### Include
+
+To include related data you can add that to the URL:
+
+```javascript
+let url = `/Observation?_include=Observation:patient`
+```
