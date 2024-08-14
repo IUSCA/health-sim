@@ -18,8 +18,8 @@ class OmopService {
     return api.get(`/omop/persons/${id}/overview`);
   }
 
-  getCategoryDetails({ id, category }) {
-    return api.get(`/omop/persons/${id}/${category}`);
+  getCategoryDetails({ id, category, view }) {
+    return api.get(`/omop/persons/${id}/${category}/${view}`);
   }
 }
 

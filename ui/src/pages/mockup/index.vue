@@ -9,7 +9,7 @@
           class="border border-solid rounded drop-shadow flex items-center justify-center"
         >
           <div
-            class="flex items-center justify-center bg-green-500 text-white rounded-full h-12 w-12 ml-5"
+            class="flex items-center justify-center bg-green-500 text-white font-bold rounded-full h-12 w-12 ml-5"
           >
             9.0
           </div>
@@ -24,7 +24,7 @@
           class="border border-solid rounded drop-shadow-2xl flex items-center justify-center"
         >
           <div
-            class="flex items-center justify-center bg-green-500 text-white rounded-full h-12 w-12 ml-5"
+            class="flex items-center justify-center bg-green-500 text-white font-bold rounded-full h-12 w-12 ml-5"
           >
             7.5
           </div>
@@ -39,7 +39,7 @@
           class="border border-solid rounded drop-shadow-2xl flex items-center justify-center"
         >
           <div
-            class="flex items-center justify-center bg-yellow-500 text-white rounded-full h-12 w-12 ml-5"
+            class="flex items-center justify-center bg-yellow-500 text-white font-bold rounded-full h-12 w-12 ml-5"
           >
             5.0
           </div>
@@ -54,7 +54,7 @@
           class="border border-solid rounded drop-shadow-2xl flex items-center justify-center"
         >
           <div
-            class="flex items-center justify-center bg-red-500 text-white rounded-full h-12 w-12 ml-5"
+            class="flex items-center justify-center bg-red-500 text-white font-bold rounded-full h-12 w-12 ml-5"
           >
             4.0
           </div>
@@ -69,7 +69,7 @@
           class="border border-solid rounded drop-shadow-2xl flex items-center justify-center"
         >
           <div
-            class="flex items-center justify-center bg-red-500 text-white rounded-full h-12 w-12 ml-5"
+            class="flex items-center justify-center bg-red-500 text-white font-bold rounded-full h-12 w-12 ml-5"
           >
             2.0
           </div>
@@ -88,21 +88,21 @@
         <div class="grid lg:grid-cols-3 gap-4 md:grid-cols-2 grid-cols-1">
           <div class="flex items mt-4">
             <div
-              class="flex items-center justify-center bg-green-500 text-white rounded h-6 w-12 ml-5"
+              class="flex items-center justify-center bg-green-500 text-white font-bold rounded h-6 w-12 ml-5"
             ></div>
             <p class="ml-2">High Likelihood</p>
           </div>
 
           <div class="flex items mt-4">
             <div
-              class="flex items-center justify-center bg-yellow-500 text-white rounded h-6 w-12 ml-5"
+              class="flex items-center justify-center bg-yellow-500 text-white font-bold rounded h-6 w-12 ml-5"
             ></div>
             <p class="ml-2">Somewhat Likely</p>
           </div>
 
           <div class="flex items mt-4">
             <div
-              class="flex items-center justify-center bg-red-500 text-white rounded h-6 w-12 ml-5"
+              class="flex items-center justify-center bg-red-500 text-white font-bold rounded h-6 w-12 ml-5"
             ></div>
             <p class="ml-2">Low Likelihood</p>
           </div>

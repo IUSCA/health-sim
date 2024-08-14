@@ -73,7 +73,7 @@ After this the data is mostly normalized and you have stripped out all of the fi
 I've done so using this convenience function:
 
 ```javascript
-onst normalizeFhirData = (data) => {
+const normalizeFhirData = (data) => {
 
   let normalizedData = []
 

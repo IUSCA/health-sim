@@ -1,6 +1,6 @@
 <script setup>
-import Line from "@/components/patient/Line.vue";
-import Timeline from "@/components/patient/Timeline.vue";
+import Bar from "@/components/charts/echarts/Bar.vue";
+import Timeline from "@/components/charts/echarts/Timeline.vue";
 import omopService from "@/services/omop";
 import { useNavStore } from "@/stores/nav";
 
@@ -31,14 +31,23 @@ const categories = ref([
   "Conditions",
 ]);
 
-const views = ref(["Graph", "Data"]);
-const view = ref("Graph");
+const views = ref([
+  { value: "timeline", icon: "schedule" },
+  { value: "graph", icon: "analytics" },
+  { value: "data", iconRight: "dataset" },
+]);
+
+const view = ref("timeline");
 
 const getData = async () => {
   data.value = {};
 
   data.value = (
-    await omopService.getCategoryDetails({ id, category: category.value })
+    await omopService.getCategoryDetails({
+      id,
+      category: category.value,
+      view: view.value,
+    })
   ).data;
   console.log(data.value);
 };
@@ -70,7 +79,7 @@ const capitalizeFirstLetter = (string) => {
 };
 
 watch(
-  () => category.value,
+  [category, view],
   () => {
     getData();
   },
@@ -125,7 +134,7 @@ watch(
       </div>
     </div>
 
-    <div v-if="category === 'Overview' || category === 'Medications'">
+    <div v-if="view === 'timeline'">
       <Timeline
         :overview="data"
         :birth-date="details.birth_datetime"
@@ -133,12 +142,31 @@ watch(
       />
       <VaInnerLoading loading :size="60" v-else />
     </div>
-    <div v-else>
+    <div v-else-if="view === 'graph' && category === 'Overview'">
       <div class="grid grid-cols-3" v-if="Object.keys(data).length > 0">
         <div v-for="chart in Object.keys(data)" :key="chart">
           <VaCard class="m-2">
             <VaCardContent>
-              <Line
+              <Bar
+                :title="chart"
+                :date-range="data[chart].date"
+                :data-range="data[chart].value"
+                :label="data[chart].unit"
+              />
+            </VaCardContent>
+          </VaCard>
+        </div>
+      </div>
+      <div v-else class="mt-12">
+        <VaInnerLoading loading :size="60" />
+      </div>
+    </div>
+    <div v-else-if="view === 'graph' && category !== 'Overview'">
+      <div class="grid grid-cols-3" v-if="Object.keys(data).length > 0">
+        <div v-for="chart in Object.keys(data)" :key="chart">
+          <VaCard class="m-2">
+            <VaCardContent>
+              <Bar
                 :title="chart"
                 :date-range="data[chart].date"
                 :data-range="data[chart].value"
