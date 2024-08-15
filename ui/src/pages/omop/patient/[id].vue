@@ -1,5 +1,6 @@
 <script setup>
-import Bar from "@/components/charts/echarts/Bar.vue";
+import DynamicChart from "@/components/charts/echarts/DynamicChart.vue";
+import Pie from "@/components/charts/echarts/Pie.vue";
 import Timeline from "@/components/charts/echarts/Timeline.vue";
 import omopService from "@/services/omop";
 import { useNavStore } from "@/stores/nav";
@@ -49,7 +50,6 @@ const getData = async () => {
       view: view.value,
     })
   ).data;
-  console.log(data.value);
 };
 
 onMounted(async () => {
@@ -143,16 +143,11 @@ watch(
       <VaInnerLoading loading :size="60" v-else />
     </div>
     <div v-else-if="view === 'graph' && category === 'Overview'">
-      <div class="grid grid-cols-3" v-if="Object.keys(data).length > 0">
+      <div class="grid grid-cols-2" v-if="Object.keys(data).length > 0">
         <div v-for="chart in Object.keys(data)" :key="chart">
           <VaCard class="m-2">
             <VaCardContent>
-              <Bar
-                :title="chart"
-                :date-range="data[chart].date"
-                :data-range="data[chart].value"
-                :label="data[chart].unit"
-              />
+              <Pie :title="chart" :data="prepareOverviewData(data[chart])" />
             </VaCardContent>
           </VaCard>
         </div>
@@ -164,16 +159,15 @@ watch(
     <div v-else-if="view === 'graph' && category !== 'Overview'">
       <div class="grid grid-cols-3" v-if="Object.keys(data).length > 0">
         <div v-for="chart in Object.keys(data)" :key="chart">
-          <VaCard class="m-2">
-            <VaCardContent>
-              <Bar
-                :title="chart"
-                :date-range="data[chart].date"
-                :data-range="data[chart].value"
-                :label="data[chart].unit"
-              />
-            </VaCardContent>
-          </VaCard>
+          <DynamicChart
+            v-if="data[chart].date.length > 0"
+            :data="{
+              title: chart,
+              dateRange: [...data[chart].date],
+              dataRange: [...data[chart].value],
+              label: data[chart].unit,
+            }"
+          />
         </div>
       </div>
       <div v-else class="mt-12">

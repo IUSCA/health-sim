@@ -26,30 +26,20 @@ use([
 This comoponent expect the data to be in the following format:
 {
   dateRange: [date1, date2, ...],
-  dataRange: [data1, data2, ...],
+  xData: [data1, data2, ...],
   title: "Title",
   label: "Label",
 }
 */
 
-const { dateRange, dataRange, title, label } = defineProps({
-  dateRange: Array,
-  dataRange: Array,
+const { xData, yData, title, label } = defineProps({
+  xData: Array,
+  yData: Array,
   title: String,
   label: String,
 });
 
-// highest and lowest data points
-// const dataRange = computed(() => [
-//   Math.min(...chartData),
-//   Math.max(...chartData),
-// ]);
-
-const dates = computed(() => {
-  return dateRange.map((date) => new Date(date).toLocaleDateString());
-});
-
-const data = dataRange;
+console.log("DATA HERE: ", xData, yData, title, label);
 
 const chartOptions = ref({
   tooltip: {
@@ -61,7 +51,7 @@ const chartOptions = ref({
 
   xAxis: {
     type: "category",
-    data: dates,
+    data: xData,
   },
   yAxis: {
     type: "value",
@@ -74,12 +64,12 @@ const chartOptions = ref({
 
       itemStyle: {},
       areaStyle: {},
-      data: data,
+      data: yData,
     },
   ],
 });
 
-if (dataRange && dataRange.length > 10) {
+if (xData && xData.length > 10) {
   chartOptions.value.dataZoom = [
     {
       type: "inside",
@@ -95,16 +85,13 @@ if (dataRange && dataRange.length > 10) {
 </script>
 
 <template>
-  <div
-    v-if="parseInt(dataRange[0]) !== NaN || dataRange[0] !== null"
-    class="h-48"
-  >
-    <div v-if="dataRange.length === 1 && parseInt(dataRange[0]) !== NaN">
+  <div v-if="parseInt(xData[0]) !== NaN || xData[0] !== null" class="h-48">
+    <div v-if="xData.length === 1 && parseInt(xData[0]) !== NaN">
       <p class="text-center text-2xl font-bold">{{ title }}</p>
       <p class="text-center text-2xl">
-        {{ dataRange[0] }} <b>{{ label }}</b>
+        {{ xData[0] }} <b>{{ label }}</b>
       </p>
-      <p class="text-center">{{ new Date(dates[0]).toLocaleDateString() }}</p>
+      <p class="text-center">{{ new Date(yData[0]).toLocaleDateString() }}</p>
     </div>
     <div v-else class="h-48">
       <p class="text-center text-2xl font-bold">{{ title }}</p>
