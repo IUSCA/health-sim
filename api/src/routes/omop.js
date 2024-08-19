@@ -27,7 +27,7 @@ router.post(
 
     const { currentPage, itemsPerPage, sortBy, sortingOrder } = req.body;
 
-    console.log(currentPage, itemsPerPage, sortBy, sortingOrder);
+    // console.log(currentPage, itemsPerPage, sortBy, sortingOrder);
 
     const skip = (currentPage - 1) * itemsPerPage; // Calculate skip value
     const take = itemsPerPage; // Number of items per page
@@ -52,18 +52,21 @@ router.get('/persons/:id', isPermittedTo('read'),  asyncHandler(async (req, res,
   // #swagger.tags = ['Patients']
   // #swagger.summary = get one patients.
   // #swagger.description = admin and operator roles are allowed and user role is forbidden
-  console.log('ID', req.params.id);
+  // console.log('ID', req.params.id);
   const data = await prisma.person.findUnique({
     where: {
       person_id: parseInt(req.params.id),
     },
+    include: {
+      death: true,
+    }
   });
   // console.log(data);
   res.json(data);
 }));
 
 // get category details
-router.get('/persons/:id/:category/:view', isPermittedTo('read'), asyncHandler(async (req, res, next) => {
+router.post('/persons/:id/:category/:view', isPermittedTo('read'), asyncHandler(async (req, res, next) => {
 
   // #swagger.tags = ['Patients']
   // #swagger.summary = get one patients category.
@@ -72,24 +75,27 @@ router.get('/persons/:id/:category/:view', isPermittedTo('read'), asyncHandler(a
   const category = req.params.category;
   const id = parseInt(req.params.id);
   const view = req.params.view;
+
+  const dateRange = req.body;
+
   let data = {};
 
 
   switch (category) {
     case 'Conditions':
-      data = await process_conditions(id, view)
+      data = await process_conditions(id, view, dateRange)
       break;
 
     case 'Vitals':
-      data = await process_vitals(id, view)
+      data = await process_vitals(id, view, dateRange)
       break;
 
     case 'Procedures':
-      data = await process_procedures(id, view)
+      data = await process_procedures(id, view, dateRange)
       break;
 
     case 'Medications':
-      data = await process_medications(id, view)
+      data = await process_medications(id, view, dateRange)
       break;
 
     case 'Overview':
@@ -103,11 +109,17 @@ router.get('/persons/:id/:category/:view', isPermittedTo('read'), asyncHandler(a
 
 }));
 
-const process_procedures = async (id, view) => {
+const process_procedures = async (id, view, dateRange) => {
   let data = {}
   let results = await prisma.procedure_occurrence.findMany({
     where: {
       person_id: id,
+      ...(view === 'graph' && {
+        procedure_date: {
+          gte: new Date(dateRange[0]),
+          lte: new Date(dateRange[1]),
+        },
+      }),
     },
     include: {
       concept_procedure_occurrence_procedure_concept_idToconcept: true,
@@ -155,11 +167,17 @@ const process_procedures = async (id, view) => {
   return data;
 }
 
-const process_medications = async (id, view) => {
+const process_medications = async (id, view, dateRange) => {
   let data = {}
   let results = await prisma.drug_exposure.findMany({
     where: {
       person_id: id,
+      ...(view === 'graph' && {
+        drug_exposure_start_date: {
+          gte: new Date(dateRange[0]),
+          lte: new Date(dateRange[1]),
+        },
+      }),
     },
     include: {
       concept_drug_exposure_drug_concept_idToconcept: true,
@@ -214,11 +232,17 @@ const process_medications = async (id, view) => {
   return data;
 }
 
-const process_conditions = async (id, view) => {
+const process_conditions = async (id, view, dateRange) => {
   let data = {}
   let results = await prisma.condition_occurrence.findMany({
     where: {
       person_id: id,
+      ...(view === 'graph' && {
+        condition_start_date: {
+          gte: new Date(dateRange[0]),
+          lte: new Date(dateRange[1]),
+        },
+      }),
     },
     include: {
       concept_condition_occurrence_condition_concept_idToconcept: true,
@@ -274,15 +298,25 @@ const process_conditions = async (id, view) => {
     }
   }
 
-  console.log(data)
+  // console.log(data)
   return data
 }
 
-const process_vitals = async (id, view) => {
+const process_vitals = async (id, view, dateRange) => {
   let data = {}
+
+
   let results = await prisma.measurement.findMany({ 
     where: {
       person_id: id,
+      // Check measurement date is within dateRange if view is graph 
+      ...(view === 'graph' && {
+        measurement_date: {
+          gte: new Date(dateRange[0]),
+          lte: new Date(dateRange[1]),
+        },
+      }),
+
     },
     include: {
       concept_measurement_measurement_concept_idToconcept: true,
@@ -292,7 +326,7 @@ const process_vitals = async (id, view) => {
 
   results.sort((a, b) => new Date(a.measurement_date) - new Date(b.measurement_date));
 
-  console.log('results', results);
+  // console.log('results', results);
 
   for(const result of results) {
     if(view === 'graph') {
@@ -301,11 +335,11 @@ const process_vitals = async (id, view) => {
       const value = result.value_source_value
       const unit = result.unit_source_value
 
-      if(type in data) {
+      if(type in data && value) {
         data[type]['value'].push(value)
         data[type]['date'].push(date)
 
-      } else {
+      } else if(value) {
           data[type] = {
             type: type,
             value: [value],
@@ -481,15 +515,19 @@ const getOverview = async (id, view) => {
       const value = vital.value_source_value
       const unit = vital.unit_source_value
 
-      if(type in data.vital) {
+      // console.log(value)
+
+      if(type in data.vital && value) {
         data.vital[type]['value'].push(value)
         data.vital[type]['date'].push(date)
       } else {
-        data.vital[type] = {
-          type: type,
-          value: [value],
-          date: [date],
-          unit: unit
+        if(value) {
+          data.vital[type] = {
+            type: type,
+            value: [value],
+            date: [date],
+            unit: unit
+          }
         }
       }
     }

@@ -39,8 +39,6 @@ const { xData, yData, title, label } = defineProps({
   label: String,
 });
 
-console.log("DATA HERE: ", xData, yData, title, label);
-
 const chartOptions = ref({
   tooltip: {
     trigger: "axis",

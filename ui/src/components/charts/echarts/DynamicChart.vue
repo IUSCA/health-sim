@@ -24,10 +24,24 @@ const dates = computed(() => {
 });
 
 const pieData = computed(() => {
-  return data.dataRange.map((value, index) => ({
-    value,
-    name: data.dateRange[index],
-  }));
+  let pData = {};
+  for (let i = 0; i < data.dataRange.length; i++) {
+    if (data.dataRange[i] in pData) {
+      pData[data.dataRange[i]].value += 1;
+    } else {
+      pData[data.dataRange[i]] = {
+        value: 1,
+        name: data.dataRange[i],
+      };
+    }
+  }
+
+  let dataArr = [];
+  for (const key of Object.keys(pData)) {
+    dataArr.push(pData[key]);
+  }
+
+  return dataArr;
 });
 </script>
 

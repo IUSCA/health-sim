@@ -39,7 +39,7 @@ const chartOptions = ref({
 
   series: [
     {
-      name: "Access From",
+      name: "Number of",
       type: "pie",
       radius: "50%",
       data: data,

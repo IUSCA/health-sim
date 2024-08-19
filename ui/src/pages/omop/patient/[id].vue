@@ -23,6 +23,8 @@ nav.setNavItems([
 const details = ref({});
 const data = ref({});
 
+const dateRange = ref([new Date(details.value.birth_datetime), Date.now()]);
+
 const category = ref("Overview");
 const categories = ref([
   "Overview",
@@ -48,6 +50,7 @@ const getData = async () => {
       id,
       category: category.value,
       view: view.value,
+      dateRange: dateRange.value,
     })
   ).data;
 };
@@ -58,6 +61,14 @@ onMounted(async () => {
     details.value = detailData;
 
     await getData();
+    dateRange.value = [
+      new Date(details.value.birth_datetime),
+      "death" in details.value &&
+      details.value.death &&
+      details.value.death_date !== null
+        ? new Date(details.value.death_date)
+        : Date.now(),
+    ];
   } catch (err) {
     console.error(err);
   }
@@ -85,6 +96,14 @@ watch(
   },
   { deep: true },
 );
+
+const prepareOverviewData = (data) => {
+  const preppedData = [];
+  for (const [key, _value] of Object.entries(data)) {
+    preppedData.push({ name: key, value: data[key].date.length });
+  }
+  return preppedData;
+};
 </script>
 
 <template>
@@ -93,6 +112,7 @@ watch(
       <span class="px-2">Details</span>
     </VaDivider>
 
+    <!-- {{ details }} -->
     <div class="flex justify-between">
       <div class="flex">
         <div class="ml-3">
@@ -157,6 +177,36 @@ watch(
       </div>
     </div>
     <div v-else-if="view === 'graph' && category !== 'Overview'">
+      <div class="w-full mt-8">
+        <VaSlider
+          v-model="dateRange"
+          range
+          :min="new Date(details.birth_datetime)"
+          :max="Date.now()"
+          @change="getData"
+        >
+          <template #trackLabel="{ value }">
+            <VaChip size="small">
+              {{ new Date(value).toLocaleDateString() }}
+            </VaChip>
+          </template>
+        </VaSlider>
+        <div class="flex">
+          <VaDateInput
+            v-model="dateRange[0]"
+            type="date"
+            label="Start Date"
+            @change="getData"
+          />
+          <span class="mx-2 w-2/3"></span>
+          <VaDateInput
+            v-model="dateRange[1]"
+            type="date"
+            label="End Date"
+            @change="getData"
+          />
+        </div>
+      </div>
       <div class="grid grid-cols-3" v-if="Object.keys(data).length > 0">
         <div v-for="chart in Object.keys(data)" :key="chart">
           <DynamicChart
